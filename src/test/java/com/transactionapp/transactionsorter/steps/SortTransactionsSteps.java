@@ -1,4 +1,4 @@
-package com.transactionapp.transactionsorter.steps.TestSteps;
+package com.transactionapp.transactionsorter.steps;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
