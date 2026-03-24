@@ -1,0 +1,20 @@
+package com.transactionapp.transactionsorter.TransactionService;
+
+
+import com.transactionapp.transactionsorter.BucketService.Bucket;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+    @Modifying
+    @Query("UPDATE Transaction t SET t.bucket = null WHERE t.bucket.id = :bucketId")
+    void removeBucketFromTransactions(@Param("bucketId") Long bucketId);
+    List<Transaction> getTransactionByBucket(Bucket bucket);
+    List<Transaction> findByBucketIsNull();
+}
