@@ -17,4 +17,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     void removeBucketFromTransactions(@Param("bucketId") Long bucketId);
     List<Transaction> getTransactionByBucket(Bucket bucket);
     List<Transaction> findByBucketIsNull();
+
+    List<Transaction> findByBucket(Bucket bucket);
 }

@@ -9,7 +9,8 @@ import java.util.Map;
 
 
 @ControllerAdvice
-public class BucketExceptionHandler {
+public class SortingExceptionHandler {
+
     @ExceptionHandler(BucketNotFoundException.class)
     public ResponseEntity<Map<String,Object>> handleTransactionNotFound(BucketNotFoundException ex) {
         Map<String,Object> body = Map.of(
@@ -30,6 +31,19 @@ public class BucketExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CategorizationException.class)
+    public ResponseEntity<Map<String,Object>> handleCategorizationException(CategorizationException ex) {
+        Map<String,Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "error", ex.getMessage(),
+                "status", HttpStatus.NOT_FOUND.value()
+        );
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+
+
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String,Object>> handleBadRequest(IllegalArgumentException ex) {
         Map<String,Object> body = Map.of(
@@ -39,4 +53,10 @@ public class BucketExceptionHandler {
         );
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
+
+
+
+
+
+
 }

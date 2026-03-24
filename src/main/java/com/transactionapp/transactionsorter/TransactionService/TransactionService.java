@@ -1,10 +1,10 @@
 package com.transactionapp.transactionsorter.TransactionService;
+
+import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
+import java.math.BigDecimal;import java.time.LocalDate;import java.util.List;
 
 @Service
 public class TransactionService {
@@ -15,9 +15,15 @@ public class TransactionService {
         this.transactionRepository = transactionRepository;
     }
 
-    public Transaction createTransaction(Transaction transaction) {
-        Transaction transaction1 = new Transaction(transaction.getDescription(), transaction.getDate(), transaction.getAmount());
-        return transactionRepository.save(transaction1);
+    // Create a new transaction
+    public Transaction createTransaction(String description, LocalDate date, BigDecimal amount) {
+        Transaction transaction = new Transaction(description, date, amount);
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction createTransaction(String description) {
+        Transaction transaction = new Transaction(description);
+        return transactionRepository.save(transaction);
     }
 
     public Transaction getTransactionById(Long transactionId) {
@@ -26,14 +32,33 @@ public class TransactionService {
                         "Transaction not found with id: " + transactionId));
     }
 
+    // Save updates to an existing transaction
+    public Transaction saveTransaction(Transaction transaction) {
+        return transactionRepository.save(transaction);
+    }
+
+    // Delete transaction by ID
+    public void deleteTransaction(Long transactionId) {
+        if (!transactionRepository.existsById(transactionId)) {
+            throw new TransactionNotFoundException(
+                    "Transaction not found with id: " + transactionId);
+        }
+        transactionRepository.deleteById(transactionId);
+    }
+
+    // Get transactions not assigned to any bucket
     public List<Transaction> getUnsortedTransactions() {
         return transactionRepository.findByBucketIsNull();
     }
 
-    public void deleteTransaction(Long transactionId) {
-        if (!transactionRepository.existsById(transactionId)) {
-            throw new TransactionNotFoundException("Transaction not found with id: " + transactionId);
-        }
-        transactionRepository.deleteById(transactionId);
+    // Get all transactions in a bucket
+    public List<Transaction> getTransactionsByBucket(Bucket bucket) {
+        return transactionRepository.findByBucket(bucket);
     }
+
+    //testing
+
+        public List<Transaction> getAllTransactions() {
+            return transactionRepository.findAll();
+        }
 }

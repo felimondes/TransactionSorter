@@ -1,9 +1,10 @@
 package com.transactionapp.transactionsorter.BucketService;
 
 import com.transactionapp.transactionsorter.ErrorHandling.BucketNotFoundException;
-import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
-import com.transactionapp.transactionsorter.TransactionService.TransactionRepository;
+import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import jakarta.annotation.PostConstruct;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,73 +13,88 @@ import java.util.List;
 @Service
 public class BucketService {
 
-    private final BucketRepository bucketRepository;
-    private final TransactionRepository transactionRepository;
+    private final BucketRepository repository;
+    private final TransactionService transactionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public BucketService(BucketRepository bucketRepository,
-                         TransactionRepository transactionRepository) {
-        this.bucketRepository = bucketRepository;
-        this.transactionRepository = transactionRepository;
+                         TransactionService transactionService,
+                         ApplicationEventPublisher eventPublisher) {
+        this.repository = bucketRepository;
+        this.transactionService = transactionService;
+        this.eventPublisher = eventPublisher;
+    }
+
+    public Bucket createBucket(String name) {
+        Bucket bucket = new Bucket(name);
+        return repository.save(bucket);
+    }
+
+    // Get all buckets
+    public List<Bucket> getAllBuckets() {
+        return repository.findAll();
+    }
+
+    // Add transaction to bucket
+    @Transactional
+    public Transaction addTransaction(Long bucketId, Long transactionId) {
+        Bucket bucket = getManagedBucket(bucketId);
+        Transaction transaction = transactionService.getTransactionById(transactionId);
+
+        bucket.addTransaction(transaction);
+        transactionService.saveTransaction(transaction);
+
+        // Publish event
+        eventPublisher.publishEvent(new TransactionAddedToBucketEvent(transaction, bucket));
+
+
+        return transaction;
+    }
+
+    // Remove transaction from bucket
+    @Transactional
+    public Transaction removeTransaction(Long bucketId, Long transactionId) {
+        Bucket bucket = getManagedBucket(bucketId);
+        Transaction transaction = transactionService.getTransactionById(transactionId);
+
+        bucket.removeTransaction(transaction);
+        transactionService.saveTransaction(transaction);
+
+        // Publish event
+        eventPublisher.publishEvent(new TransactionRemovedFromBucketEvent(transaction, bucket));
+
+
+        return transaction;
+    }
+
+    @Transactional
+    public List<Transaction> getTransactionsInBucket(Long bucketId) {
+        Bucket bucket = getManagedBucket(bucketId);
+        return transactionService.getTransactionsByBucket(bucket);
     }
 
     @Transactional
     public List<Transaction> deleteBucket(Long bucketId) {
         Bucket bucket = getManagedBucket(bucketId);
 
-        List<Transaction> transactions = transactionRepository.getTransactionByBucket(bucket);
-        transactionRepository.removeBucketFromTransactions(bucket.getId());
-        bucketRepository.deleteById(bucket.getId());
+        List<Transaction> transactions = transactionService.getTransactionsByBucket(bucket);
 
-        transactions.forEach(t -> t.setBucket(null));
+        transactions.forEach(t -> {
+            removeTransaction(bucketId, t.getId());
+        });
+
+        repository.deleteById(bucket.getId());
+
         return transactions;
     }
 
-    @Transactional
-    public Transaction addTransaction(Long bucketId, Long transactionId) {
-        Bucket bucket = getManagedBucket(bucketId);
-        Transaction transaction = getManagedTransaction(transactionId);
-
-        bucket.addTransaction(transaction);
-        return transaction;
-    }
-
-    @Transactional
-    public Transaction removeTransaction(Long bucketId, Long transactionId) {
-        Bucket bucket = getManagedBucket(bucketId);
-        Transaction transaction = getManagedTransaction(transactionId);
-
-        bucket.removeTransaction(transaction);
-        return transaction;
-    }
-
-    public Bucket createBucket(String name) {
-        Bucket bucket = new Bucket(name);
-        return bucketRepository.save(bucket);
-    }
-
-    @Transactional
-    public List<Transaction> getTransactionsInBucket(Long bucketId) {
-        Bucket bucket = getManagedBucket(bucketId);
-        return transactionRepository.getTransactionByBucket(bucket);
-    }
-
-
-    public List<Bucket> getAllBuckets() {
-        return bucketRepository.findAll();
-    }
-
     private Bucket getManagedBucket(Long bucketId) {
-        return bucketRepository.findById(bucketId)
+        return repository.findById(bucketId)
                 .orElseThrow(() -> new BucketNotFoundException(
                         "Bucket not found with id: " + bucketId));
     }
 
 
-    private Transaction getManagedTransaction(Long transactionId) {
-        return transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new TransactionNotFoundException(
-                        "Transaction not found with id: " + transactionId));
-    }
+
+
 }
-
-

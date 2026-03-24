@@ -44,6 +44,9 @@ public class Bucket {
         this.id = id;
     }
 
+    public String getName() {
+        return name;
+    }
 
     @PostPersist
     public void prePersist() {

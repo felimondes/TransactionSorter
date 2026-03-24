@@ -5,6 +5,9 @@ import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import io.cucumber.java.After;
+import io.cucumber.java.Before;
+import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -33,9 +36,10 @@ public class SortTransactionsSteps {
         this.transactionService = transactionService;
     }
 
+
     @Given("a transaction")
     public void aTransactionWithSomeInformation() {
-        Transaction transaction = transactionService.createTransaction(new Transaction("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00")));
+        Transaction transaction = transactionService.createTransaction("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00"));
         transactionId = transaction.getId();
     }
 

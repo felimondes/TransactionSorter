@@ -2,6 +2,7 @@ package com.transactionapp.transactionsorter;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
+import com.transactionapp.transactionsorter.TransactionCategorizationService.TransactionCategorizationService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import org.springframework.boot.SpringApplication;
@@ -17,7 +18,13 @@ public class TransactionSorterApplication {
     public static void main(String[] args) {
         org.springframework.context.ApplicationContext context = SpringApplication.run(TransactionSorterApplication.class, args);
 
-        BucketService bucketService = context.getBean(BucketService.class);
+        TransactionCategorizationService service = context.getBean(TransactionCategorizationService.class);
+        
+
+
+
+
+
 
 
     }

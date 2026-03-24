@@ -19,22 +19,19 @@ public class Transaction {
     @JoinColumn(name = "bucket_id")
     private Bucket bucket;
 
-    @NotNull
-    @Column(nullable = false)
+
     private String description;
-
-    @NotNull
-    @Column(nullable = false)
     private LocalDate date;
-
-    @NotNull
-    @Column(nullable = false)
     private BigDecimal amount;
 
     public Transaction(String description, LocalDate date, BigDecimal amount) {
         this.description = description;
         this.date = date;
         this.amount = amount;
+    }
+
+    public Transaction(String description) {
+        this.description = description;
     }
 
     protected Transaction() {
