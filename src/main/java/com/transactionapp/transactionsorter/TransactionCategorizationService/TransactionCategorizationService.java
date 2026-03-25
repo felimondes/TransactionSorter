@@ -7,6 +7,8 @@ import com.transactionapp.transactionsorter.ErrorHandling.CategorizationExceptio
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import org.springframework.stereotype.Service;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -26,7 +28,7 @@ public class TransactionCategorizationService {
         Map<String, Long> keyToBucketId = new HashMap<>();
 
         for (String token : tokens) {
-            List<TokenCategoryStat> stats = repository.findByToken(token);
+            List<TokenCategoryStat> stats = repository.findById_Token(token);
 
             int total = 0;
             for (TokenCategoryStat stat : stats) {
@@ -59,12 +61,12 @@ public class TransactionCategorizationService {
 
 
     @EventListener
-    private void handleTransactionAdded(TransactionAddedToBucketEvent event) {
+    public void handleTransactionAdded(TransactionAddedToBucketEvent event) {
         this.learn(event.getTransaction(), event.getBucket());
     }
 
     @EventListener
-    private void handleTransactionRemoved(TransactionRemovedFromBucketEvent event) {
+    public void handleTransactionRemoved(TransactionRemovedFromBucketEvent event) {
         this.unlearn(event.getTransaction(), event.getBucket());
     }
 
@@ -88,43 +90,40 @@ public class TransactionCategorizationService {
     }
 
 
-
-
-
+    @Transactional
     public void learn(Transaction transaction, Bucket bucket) {
         List<String> tokens = extractTokens(transaction.getDescription());
 
         for (String token : tokens) {
-            Optional<TokenCategoryStat> existing =
-                    repository.findByBucketIdAndTokenAndCategory(bucket.getId(), token, bucket.getName());
+            TokenCategoryStatId statId = new TokenCategoryStatId(bucket.getId(), token);
 
-            TokenCategoryStat stat = existing.orElseGet(() ->
-                    new TokenCategoryStat(token, bucket.getName(), 0, bucket.getId())
-            );
+            // Fetch existing stat; if missing, create new
+            TokenCategoryStat stat = repository.findById(statId)
+                    .orElseGet(() -> new TokenCategoryStat(token, bucket));
 
+            // Increment count and update timestamp
             stat.increment();
+
+            // Save changes
             repository.save(stat);
         }
     }
 
-    private void unlearn(Transaction transaction, Bucket bucket
-    ) {
+    @Transactional
+    public void unlearn(Transaction transaction, Bucket bucket) {
         List<String> tokens = extractTokens(transaction.getDescription());
 
         for (String token : tokens) {
-            Optional<TokenCategoryStat> existing =
-                    repository.findByBucketIdAndTokenAndCategory(bucket.getId(), token, bucket.getName());
+            TokenCategoryStatId statId = new TokenCategoryStatId(bucket.getId(), token);
 
-            if (existing.isPresent()) {
-                TokenCategoryStat stat = existing.get();
+            repository.findById(statId).ifPresent(stat -> {
                 stat.decrement();
-
                 if (stat.getCount() <= 0) {
                     repository.delete(stat);
                 } else {
                     repository.save(stat);
                 }
-            }
+            });
         }
     }
 

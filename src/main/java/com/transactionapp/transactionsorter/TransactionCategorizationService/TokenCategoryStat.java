@@ -1,33 +1,37 @@
 package com.transactionapp.transactionsorter.TransactionCategorizationService;
 
-import com.transactionapp.transactionsorter.BucketService.Bucket;import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.transactionapp.transactionsorter.BucketService.Bucket;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 public class TokenCategoryStat {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private TokenCategoryStatId id;
 
-    private String token;
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("bucketId") // maps the bucketId inside TokenCategoryStatId
+    @JoinColumn(name = "bucket_id")
+    private Bucket bucket;
+
     private int count;
     private LocalDateTime lastUpdated;
-    private Long bucketId;
+    private String category;
+
 
     public TokenCategoryStat() {}
 
-    public TokenCategoryStat(String token, String category, int count, Long bucketId) {
-        this.bucketId = bucketId;
-        this.token = token;
-        this.category = category;
-        this.count = count;
+    public TokenCategoryStat(String token, Bucket bucket) {
+        this.id = new TokenCategoryStatId(bucket.getId(), token);
+        this.bucket = bucket;
+        this.count = 0;
+        this.lastUpdated = LocalDateTime.now();
+        this.category = bucket.getName();
     }
+
+
 
     public void increment() {
         this.count++;
@@ -38,17 +42,11 @@ public class TokenCategoryStat {
         this.count--;
     }
 
-    public Long getId() {
+    public TokenCategoryStatId getId() {
         return id;
     }
 
-    public String getToken() {
-        return token;
-    }
 
-    public String getCategory() {
-        return category;
-    }
 
     public int getCount() {
         return count;
@@ -58,7 +56,16 @@ public class TokenCategoryStat {
         return lastUpdated;
     }
 
+
+    public String getCategory() {
+        return category;
+    }
+
     public Long getBucketId() {
-        return bucketId;
+        return id.getBucketId();
+    }
+
+    public String getToken() {
+        return id.getToken();
     }
 }
