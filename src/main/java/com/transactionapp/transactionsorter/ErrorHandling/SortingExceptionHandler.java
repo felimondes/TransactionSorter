@@ -41,6 +41,16 @@ public class SortingExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(TransactionParserException.class)
+    public ResponseEntity<Map<String,Object>> handleTransactionParserException(TransactionParserException ex) {
+        Map<String,Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "error", ex.getMessage(),
+                "status", HttpStatus.BAD_REQUEST.value()
+        );
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
 
 
 

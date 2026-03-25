@@ -11,19 +11,20 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class SortSuggestion {
+@SpringBootTest
+public class SortSuggestionSteps {
 
     TransactionService transactionService;
     BucketService bucketService;
     TransactionCategorizationService transactionCategorizationService;
     private String category;
     Bucket bucket;
-    public SortSuggestion(TransactionService  transactionService,
-                          BucketService bucketService,
-                          TransactionCategorizationService transactionCategorizationService) {
+    public SortSuggestionSteps(TransactionService  transactionService,
+                               BucketService bucketService,
+                               TransactionCategorizationService transactionCategorizationService) {
         this.bucketService = bucketService;
         this.transactionService = transactionService;
         this.transactionCategorizationService = transactionCategorizationService;
