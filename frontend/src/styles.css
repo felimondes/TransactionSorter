@@ -19,10 +19,10 @@ body{font-family:Inter, Arial, Helvetica, sans-serif;background:#0b0b0b;color:#e
 .canvas{position:fixed;left:0;top:0;right:0;bottom:0;background:linear-gradient(180deg,#050505,#0d0f0d);overflow:auto;padding:24px}
 
 /* node visuals - chalk look */
-.node{position:absolute;padding:12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,0.6);background:linear-gradient(180deg,#1b1b1b,#111);border:1px solid rgba(255,255,255,0.06);min-width:180px;color:#fff}
+.node{position:absolute;padding:12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,0.6);background:linear-gradient(180deg,#1b1b1b,#111);border:1px solid rgba(255,255,255,0.06);min-width:180px;color:#fff;user-select:none}
 .bucket-node{border-left:6px solid #2b6cb0}
 .tx-node{border-left:6px solid #f6a623}
-.node .node-title{font-weight:600;font-size:13px}
+.node .node-title{font-weight:600;font-size:13px;user-select:none}
 .node.selected{outline:2px solid rgba(255,255,255,0.06)}
 .node.highlight{box-shadow:0 12px 30px rgba(43,108,176,0.18);border-color:var(--accent)}
 

@@ -3,6 +3,8 @@ import SortPage from './pages/Sort'
 import UploadPage from './pages/Upload'
 import StatisticsPage from './pages/Statistics'
 
+const VERSION = 'v0.2.0' // bumped to indicate the marquee + keyboard changes
+
 export default function App() {
   const [showUpload, setShowUpload] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -12,7 +14,7 @@ export default function App() {
       <SortPage />
 
       <div className="floating-menu">
-        <div className="title">TransactionSorter</div>
+        <div className="title">TransactionSorter <span style={{fontWeight:400, marginLeft:8, fontSize:12}}>{VERSION}</span></div>
         <div className="menu-actions">
           <button onClick={() => setShowUpload(true)}>Upload</button>
           <button onClick={() => setShowStats(true)}>Statistics</button>
