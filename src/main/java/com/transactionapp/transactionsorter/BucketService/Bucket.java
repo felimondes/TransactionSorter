@@ -25,7 +25,7 @@ public class Bucket {
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
     private List<TokenCategoryStat> tokenStats = new ArrayList<>();
 
-    protected Bucket(String name) {
+    public Bucket(String name) {
         this.name = name;
     }
 

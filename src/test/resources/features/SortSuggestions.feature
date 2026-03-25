@@ -24,5 +24,9 @@ Feature: As a user i want suggestion on where to put unsorted transactions based
         Then i get a suggestion to put the transaction in the bucket labeled "Bucket"
 
 
+    Scenario: Learn is not messing up on multiple threads
+        Then its fine
+
+
 
 
