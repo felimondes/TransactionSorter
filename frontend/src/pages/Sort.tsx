@@ -3,6 +3,8 @@ import * as api from '../services/api'
 
 type Pos = { x: number; y: number }
 
+const APP_VERSION = 3 // bump this when releasing new UI changes
+
 export default function SortPage() {
   const [transactions, setTransactions] = useState<api.Transaction[]>([])
   const [buckets, setBuckets] = useState<api.Bucket[]>([])
@@ -39,6 +41,25 @@ export default function SortPage() {
 
   // context menu
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+
+  // small helpers for formatting
+  function formatDay(dateStr: string) {
+    if (!dateStr) return '?'
+    try {
+      const d = new Date(dateStr)
+      if (!Number.isNaN(d.getTime())) return String(d.getDate()).padStart(2, '0')
+    } catch {}
+    // try dd-MM-yyyy pattern
+    const m = dateStr.match(/(\d{1,2})-(\d{1,2})-(\d{4})/)
+    if (m) return m[1].padStart(2, '0')
+    // fallback: try first two chars
+    return dateStr.slice(0, 2)
+  }
+  function formatAmount(v: number) {
+    if (v == null || Number.isNaN(v)) return '-'
+    // assume amounts are in currency units; show two decimals
+    return (v >= 0 ? '' : '-') + Math.abs(v).toFixed(2)
+  }
 
   async function load() {
     setLoading(true)
@@ -148,7 +169,6 @@ export default function SortPage() {
         if (canvas && storedPos) {
           const nodeEl = nodeRefs.current[`tx-${id}`] || nodeRefs.current[`bucket-${id}`]
           if (nodeEl) {
-            // offsetLeft/offsetTop are relative to the canvas content box — reliable for positioning
             const left = (nodeEl.offsetLeft || storedPos.x) + (nodeEl.offsetWidth || 180) + 8
             const top = nodeEl.offsetTop || storedPos.y
             setSuggestionPos(prev => ({ ...prev, [id]: { left, top } }))
@@ -269,25 +289,71 @@ export default function SortPage() {
         document.body.style.userSelect = ''
       }
 
-      // finish marquee selection
+      // finish marquee selection - compute rectangle from startPointRef + event (avoid stale state)
       if (isSelectingRef.current) {
         isSelectingRef.current = false
-        const m = marquee
+        const canvas = canvasRef.current
+        const sp = startPointRef.current
         setMarquee(null)
         startPointRef.current = null
-        if (m) {
-          // select nodes that intersect marquee
-          const canvas = canvasRef.current
-          if (canvas) {
-            const cRect = canvas.getBoundingClientRect()
+        // release user-select lock
+        document.body.style.userSelect = ''
+        if (canvas && sp) {
+          const cRect = canvas.getBoundingClientRect()
+          const x = e.clientX - cRect.left
+          const y = e.clientY - cRect.top
+          const left = Math.min(sp.x, x)
+          const top = Math.min(sp.y, y)
+          const w = Math.abs(x - sp.x)
+          const h = Math.abs(y - sp.y)
+          if (w > 0 && h > 0) {
             const newlySelected: Record<number, boolean> = {}
+            // transactions
             transactions.forEach(t => {
+              // prefer stored position (canvas coordinates)
+              const p = txPositions[t.id]
+              let nodeLeft = p ? p.x : undefined
+              let nodeTop = p ? p.y : undefined
+              let nodeW = 180
+              let nodeH = 60
               const el = nodeRefs.current[`tx-${t.id}`]
-              if (!el) return
-              const r = el.getBoundingClientRect()
-              const rel = { left: r.left - cRect.left, top: r.top - cRect.top, right: r.right - cRect.left, bottom: r.bottom - cRect.top }
-              const intersects = !(rel.left > m.x + m.w || rel.right < m.x || rel.top > m.y + m.h || rel.bottom < m.y)
-              if (intersects) newlySelected[t.id] = true
+              if (el) {
+                nodeW = el.offsetWidth || nodeW
+                nodeH = el.offsetHeight || nodeH
+                if (nodeLeft === undefined || nodeTop === undefined) {
+                  const r = el.getBoundingClientRect()
+                  nodeLeft = r.left - cRect.left
+                  nodeTop = r.top - cRect.top
+                }
+              }
+              if (nodeLeft !== undefined && nodeTop !== undefined) {
+                const rel = { left: nodeLeft, top: nodeTop, right: nodeLeft + nodeW, bottom: nodeTop + nodeH }
+                const intersects = !(rel.left > left + w || rel.right < left || rel.top > top + h || rel.bottom < top)
+                if (intersects) newlySelected[t.id] = true
+              }
+            })
+            // buckets (include buckets in selection)
+            buckets.forEach(b => {
+              const p = bucketPositions[b.id]
+              let nodeLeft = p ? p.x : undefined
+              let nodeTop = p ? p.y : undefined
+              let nodeW = 180
+              let nodeH = 80
+              const el = nodeRefs.current[`bucket-${b.id}`]
+              if (el) {
+                nodeW = el.offsetWidth || nodeW
+                nodeH = el.offsetHeight || nodeH
+                if (nodeLeft === undefined || nodeTop === undefined) {
+                  const r = el.getBoundingClientRect()
+                  nodeLeft = r.left - cRect.left
+                  nodeTop = r.top - cRect.top
+                }
+              }
+              if (nodeLeft !== undefined && nodeTop !== undefined) {
+                const rel = { left: nodeLeft, top: nodeTop, right: nodeLeft + nodeW, bottom: nodeTop + nodeH }
+                const intersects = !(rel.left > left + w || rel.right < left || rel.top > top + h || rel.bottom < top)
+                if (intersects) newlySelected[b.id] = true
+              }
             })
             setSelectedMap(() => newlySelected)
             // when multiple selected, suggestions should be disabled for them
@@ -302,7 +368,7 @@ export default function SortPage() {
     window.addEventListener('pointermove', pointerMove)
     window.addEventListener('pointerup', pointerUp)
     return () => { window.removeEventListener('pointermove', pointerMove); window.removeEventListener('pointerup', pointerUp) }
-  }, [bucketPositions, txPositions, transactions, selectedMap, suggestionsEnabled])
+  }, [bucketPositions, txPositions, transactions, selectedMap, suggestionsEnabled, buckets])
 
   // add missing helper
   async function addToBucket(bucketId: number, txId: number) {
@@ -334,6 +400,8 @@ export default function SortPage() {
     setMarquee({ x, y, w: 0, h: 0 })
     // prevent text selection
     e.preventDefault()
+    // lock user-select while marquee is active
+    document.body.style.userSelect = 'none'
   }
 
   function startNodeDrag(e: React.PointerEvent, type: 'bucket' | 'tx', id: number) {
@@ -408,6 +476,7 @@ export default function SortPage() {
 
   return (
     <section className="sort-page" style={{height:'100%',width:'100%'}} onContextMenu={onContextMenu}>
+      <div style={{position:'absolute',left:12,top:8,zIndex:60,color:'#fff',fontWeight:700}}>TransactionSorter v{APP_VERSION}</div>
       <div ref={canvasRef} className="canvas" onPointerDown={onCanvasPointerDown} style={{height:'100%'}}>
         {loading && <div className="loading">Loading...</div>}
 
@@ -428,6 +497,8 @@ export default function SortPage() {
         {/* transactions as nodes */}
         {transactions.map(t => {
           const pos = txPositions[t.id] || { x: 320, y: 20 }
+          const day = formatDay(t.date)
+          const amtColor = t.amount >= 0 ? '#1db954' : '#888'
           return (
             <div key={t.id}
                  ref={el => { nodeRefs.current[`tx-${t.id}`] = el }}
@@ -437,6 +508,10 @@ export default function SortPage() {
                  onPointerEnter={e => { setLastHoveredId(t.id); fetchSuggestion(t.id, t.description, e.currentTarget as HTMLElement) }}
                  onPointerLeave={() => { clearSuggestion(t.id); setLastHoveredId(null) }}>
               <div className="node-title">{t.description}</div>
+              <div style={{display:'flex',gap:8,alignItems:'center',marginTop:6}}>
+                <div style={{background:'#222',color:'#fff',padding:'2px 6px',borderRadius:4,fontSize:12}}>{day}</div>
+                <div style={{color:amtColor,fontSize:13,opacity:0.95}}>{formatAmount(t.amount)}</div>
+              </div>
             </div>
           )
         })}
