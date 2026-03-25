@@ -26,9 +26,11 @@ public class TransactionParserSteps {
     }
 
     MockMultipartFile file;
-
+    int sizeBefore;
     @Given("a csv with transactions")
     public void aCsvWithTransactions() throws IOException {
+        sizeBefore = transactionService.getAllTransactions().size();
+
         InputStream is = getClass()
                 .getClassLoader()
                 .getResourceAsStream("transactionsTest.csv");
@@ -49,7 +51,8 @@ public class TransactionParserSteps {
 
     @Then("i see the transactions in my unsorted transactions")
     public void iSeeTheTransactionsInMyUnsortedTransactions() {
-        List<Transaction> transactionList = transactionService.getAllTransactions();
-        assertEquals(12, transactionList.size());
+        List<Transaction> sizeAfter = transactionService.getAllTransactions();
+        assertEquals(sizeBefore + 12, sizeAfter.size());
+
     }
 }

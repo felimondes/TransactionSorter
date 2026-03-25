@@ -2,6 +2,7 @@ package com.transactionapp.transactionsorter.TransactionService;
 
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
+import com.transactionapp.transactionsorter.StatisticsService.BucketAverage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,11 +13,15 @@ import java.util.List;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    @Modifying
-    @Query("UPDATE Transaction t SET t.bucket = null WHERE t.bucket.id = :bucketId")
-    void removeBucketFromTransactions(@Param("bucketId") Long bucketId);
+
     List<Transaction> getTransactionByBucket(Bucket bucket);
     List<Transaction> findByBucketIsNull();
-
     List<Transaction> findByBucket(Bucket bucket);
+
+    @Query("""
+    SELECT t.bucket.id AS bucketId, t.bucket.name AS bucketName, AVG(t.amount) AS averagePerMonth
+    FROM Transaction t
+    GROUP BY t.bucket.id, t.bucket.name
+""")
+    List<BucketAverage> findAveragePerMonthByBucket();
 }

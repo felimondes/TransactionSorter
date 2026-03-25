@@ -51,6 +51,16 @@ public class SortingExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(StatisticsException.class)
+    public ResponseEntity<Map<String,Object>> handleStatisticsException(StatisticsException ex) {
+        Map<String,Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "error", ex.getMessage(),
+                "status", HttpStatus.BAD_REQUEST.value()
+        );
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
 
 
 

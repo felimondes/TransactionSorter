@@ -2,6 +2,7 @@ package com.transactionapp.transactionsorter.TransactionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
+import com.transactionapp.transactionsorter.StatisticsService.BucketAverage;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;import java.time.LocalDate;import java.util.List;
@@ -61,4 +62,8 @@ public class TransactionService {
         public List<Transaction> getAllTransactions() {
             return transactionRepository.findAll();
         }
+
+    public List<BucketAverage> findAveragePerMonthByBucket() {
+        return transactionRepository.findAveragePerMonthByBucket();
+    }
 }

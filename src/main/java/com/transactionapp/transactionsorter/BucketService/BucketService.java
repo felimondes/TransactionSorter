@@ -3,7 +3,6 @@ package com.transactionapp.transactionsorter.BucketService;
 import com.transactionapp.transactionsorter.ErrorHandling.BucketNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,26 +12,26 @@ import java.util.List;
 @Service
 public class BucketService {
 
-    private final BucketRepository repository;
+    private final BucketRepository bucketRepository;
     private final TransactionService transactionService;
     private final ApplicationEventPublisher eventPublisher;
 
     public BucketService(BucketRepository bucketRepository,
                          TransactionService transactionService,
                          ApplicationEventPublisher eventPublisher) {
-        this.repository = bucketRepository;
+        this.bucketRepository = bucketRepository;
         this.transactionService = transactionService;
         this.eventPublisher = eventPublisher;
     }
 
     public Bucket createBucket(String name) {
         Bucket bucket = new Bucket(name);
-        return repository.save(bucket);
+        return bucketRepository.save(bucket);
     }
 
     // Get all buckets
     public List<Bucket> getAllBuckets() {
-        return repository.findAll();
+        return bucketRepository.findAll();
     }
 
     // Add transaction to bucket
@@ -83,18 +82,22 @@ public class BucketService {
             removeTransaction(bucketId, t.getId());
         });
 
-        repository.deleteById(bucket.getId());
+        bucketRepository.deleteById(bucket.getId());
 
         return transactions;
     }
 
     private Bucket getManagedBucket(Long bucketId) {
-        return repository.findById(bucketId)
+        return bucketRepository.findById(bucketId)
                 .orElseThrow(() -> new BucketNotFoundException(
                         "Bucket not found with id: " + bucketId));
     }
 
-
-
-
+    @Transactional
+    public void deleteAllBuckets() {
+        List<Bucket> buckets = bucketRepository.findAll();
+        for (Bucket bucket : buckets) {
+            deleteBucket(bucket.getId());
+        }
+    }
 }
