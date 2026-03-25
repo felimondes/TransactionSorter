@@ -2,18 +2,21 @@ package com.transactionapp.transactionsorter.steps;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
+import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.TransactionCategorizationService.CategoryScore;
 import com.transactionapp.transactionsorter.TransactionCategorizationService.TransactionCategorizationService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 
+import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
 @SpringBootTest
 public class SortSuggestionSteps {
 
@@ -93,5 +96,29 @@ public class SortSuggestionSteps {
     @When("i delete the first bucket")
     public void iDeleteTheFirstBucket() {
         bucketService.deleteBucket(bucket.getId());
+    }
+
+    @Then("its fine")
+    public void itsFine() {
+        bucketService.createBucket("Test bucket");
+
+        Transaction tx1 = transactionService.createTransaction("fotex purchase");
+        Transaction tx2 = transactionService.createTransaction("fotex purchase");
+
+        try {
+            Runnable task1 = () -> transactionCategorizationService.learn(new TransactionAddedToBucketEvent(tx1, bucket));
+            Runnable task2 = () -> transactionCategorizationService.learn(new TransactionAddedToBucketEvent(tx2, bucket));
+
+            Thread t1 = new Thread(task1);
+            Thread t2 = new Thread(task2);
+
+            t1.start();
+            t2.start();
+
+            t1.join();
+            t2.join();
+        } catch (Exception e) {
+            fail();
+        }
     }
 }

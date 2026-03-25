@@ -5,6 +5,7 @@ import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBuck
 import com.transactionapp.transactionsorter.BucketService.TransactionRemovedFromBucketEvent;
 import com.transactionapp.transactionsorter.ErrorHandling.CategorizationException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Service;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,15 +61,7 @@ public class TransactionCategorizationService {
     }
 
 
-    @EventListener
-    public void handleTransactionAdded(TransactionAddedToBucketEvent event) {
-        this.learn(event.getTransaction(), event.getBucket());
-    }
 
-    @EventListener
-    public void handleTransactionRemoved(TransactionRemovedFromBucketEvent event) {
-        this.unlearn(event.getTransaction(), event.getBucket());
-    }
 
     private String normalize(String input) {
         return input.toLowerCase()
@@ -89,43 +82,39 @@ public class TransactionCategorizationService {
         return new ArrayList<>(uniqueTokens);
     }
 
-
+    @EventListener
     @Transactional
-    public void learn(Transaction transaction, Bucket bucket) {
-        List<String> tokens = extractTokens(transaction.getDescription());
+    public void learn(TransactionAddedToBucketEvent event) {
+        Bucket bucket = event.getBucket();
+        List<String> tokens = extractTokens(event.getTransaction().getDescription());
 
+        //Concurrency problems here:)
         for (String token : tokens) {
-            TokenCategoryStatId statId = new TokenCategoryStatId(bucket.getId(), token);
-
-            // Fetch existing stat; if missing, create new
-            TokenCategoryStat stat = repository.findById(statId)
-                    .orElseGet(() -> new TokenCategoryStat(token, bucket));
-
-            // Increment count and update timestamp
-            stat.increment();
-
-            // Save changes
-            repository.save(stat);
-        }
-    }
-
-    @Transactional
-    public void unlearn(Transaction transaction, Bucket bucket) {
-        List<String> tokens = extractTokens(transaction.getDescription());
-
-        for (String token : tokens) {
-            TokenCategoryStatId statId = new TokenCategoryStatId(bucket.getId(), token);
-
-            repository.findById(statId).ifPresent(stat -> {
-                stat.decrement();
-                if (stat.getCount() <= 0) {
-                    repository.delete(stat);
-                } else {
-                    repository.save(stat);
+            int updated = repository.incrementCount(bucket.getId(), token, 1, java.time.LocalDateTime.now());
+            if (updated == 0) {
+                try {
+                    repository.upsertLearn(bucket.getId(), token, bucket.getName());
+                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                    int updatedAgain = repository.incrementCount(bucket.getId(), token, 1, java.time.LocalDateTime.now());
+                    if (updatedAgain == 0) {
+                        throw ex;
+                    }
                 }
-            });
+            }
         }
     }
+
+    @EventListener
+    @Transactional
+    public void unlearn(TransactionRemovedFromBucketEvent event) {
+        Bucket bucket = event.getBucket();
+        List<String> tokens = extractTokens(event.getTransaction().getDescription());
+
+        for (String token : tokens) {
+            repository.atomicUnlearn(bucket.getId(), token);
+        }
+    }
+
 
     public void cleanupOldTokens() {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
