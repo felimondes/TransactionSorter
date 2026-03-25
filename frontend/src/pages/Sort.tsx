@@ -3,7 +3,6 @@ import * as api from '../services/api'
 
 type Pos = { x: number; y: number }
 
-const APP_VERSION = 3 // bump this when releasing new UI changes
 
 export default function SortPage() {
   const [transactions, setTransactions] = useState<api.Transaction[]>([])
@@ -35,6 +34,7 @@ export default function SortPage() {
     startClientX: number
     startClientY: number
     initialPositions: Record<number, Pos>
+    idTypes?: Record<number, 'tx' | 'bucket'>
     offsetX?: number
     offsetY?: number
   }>(null)
@@ -126,7 +126,7 @@ export default function SortPage() {
         const id = lastHoveredId
         if (id == null) return
         const s = suggestions[id]
-        if (s && typeof s.bucketId === 'number') {
+        if (s && s.bucketId != null) {
           addToBucket(s.bucketId, id).catch(console.error)
         }
       }
@@ -223,8 +223,13 @@ export default function SortPage() {
             const initial = d.initialPositions[id] || { x: 0, y: 0 }
             updated[id] = { x: initial.x + dx, y: initial.y + dy }
           })
-          setTxPositions(prev => ({ ...prev, ...Object.fromEntries(d.ids.filter(i => Object.prototype.hasOwnProperty.call(prev, i)).map(i => [i, updated[i]])) }))
-          setBucketPositions(prev => ({ ...prev, ...Object.fromEntries(d.ids.filter(i => Object.prototype.hasOwnProperty.call(prev, i)).map(i => [i, updated[i]])) }))
+
+          // apply updates only to the appropriate position maps based on idTypes
+          const txUpdates = Object.fromEntries(d.ids.filter(i => (d.idTypes ? d.idTypes[i] === 'tx' : Object.prototype.hasOwnProperty.call(txPositions, i))).map(i => [i, updated[i]]))
+          const bucketUpdates = Object.fromEntries(d.ids.filter(i => (d.idTypes ? d.idTypes[i] === 'bucket' : Object.prototype.hasOwnProperty.call(bucketPositions, i))).map(i => [i, updated[i]]))
+
+          if (Object.keys(txUpdates).length > 0) setTxPositions(prev => ({ ...prev, ...txUpdates }))
+          if (Object.keys(bucketUpdates).length > 0) setBucketPositions(prev => ({ ...prev, ...bucketUpdates }))
         }
 
         // highlight bucket under pointer when dragging tx (works for single or group)
@@ -276,8 +281,8 @@ export default function SortPage() {
             }
           })
           if (found !== null) {
-            // assign transaction ids only (filter out bucket ids)
-            const txIds = d.ids.filter(id => Object.prototype.hasOwnProperty.call(txPositions, id))
+            // assign transaction ids only (filter out bucket ids) using idTypes when available
+            const txIds = d.ids.filter(id => d.idTypes ? d.idTypes[id] === 'tx' : Object.prototype.hasOwnProperty.call(txPositions, id))
             if (txIds.length > 0) {
               Promise.all(txIds.map(id => api.addTransactionToBucket(found!, id))).then(() => load())
             }
@@ -332,29 +337,10 @@ export default function SortPage() {
                 if (intersects) newlySelected[t.id] = true
               }
             })
-            // buckets (include buckets in selection)
-            buckets.forEach(b => {
-              const p = bucketPositions[b.id]
-              let nodeLeft = p ? p.x : undefined
-              let nodeTop = p ? p.y : undefined
-              let nodeW = 180
-              let nodeH = 80
-              const el = nodeRefs.current[`bucket-${b.id}`]
-              if (el) {
-                nodeW = el.offsetWidth || nodeW
-                nodeH = el.offsetHeight || nodeH
-                if (nodeLeft === undefined || nodeTop === undefined) {
-                  const r = el.getBoundingClientRect()
-                  nodeLeft = r.left - cRect.left
-                  nodeTop = r.top - cRect.top
-                }
-              }
-              if (nodeLeft !== undefined && nodeTop !== undefined) {
-                const rel = { left: nodeLeft, top: nodeTop, right: nodeLeft + nodeW, bottom: nodeTop + nodeH }
-                const intersects = !(rel.left > left + w || rel.right < left || rel.top > top + h || rel.bottom < top)
-                if (intersects) newlySelected[b.id] = true
-              }
-            })
+
+            // NOTE: intentionally only select transactions via marquee to avoid accidentally including buckets
+            // This prevents buckets from being moved/selected when the user is marquee-selecting multiple transactions.
+
             setSelectedMap(() => newlySelected)
             // when multiple selected, suggestions should be disabled for them
             setSuggestions({})
@@ -418,9 +404,10 @@ export default function SortPage() {
     }
     const ids = selectedMap[id] ? selectedIds : [id]
     const initialPositions: Record<number, Pos> = {}
+    const idTypes: Record<number, 'tx' | 'bucket'> = {}
     ids.forEach(i => {
-      if (Object.prototype.hasOwnProperty.call(txPositions, i)) initialPositions[i] = { ...txPositions[i] }
-      else if (Object.prototype.hasOwnProperty.call(bucketPositions, i)) initialPositions[i] = { ...bucketPositions[i] }
+      if (Object.prototype.hasOwnProperty.call(txPositions, i)) { initialPositions[i] = { ...txPositions[i] }; idTypes[i] = 'tx' }
+      else if (Object.prototype.hasOwnProperty.call(bucketPositions, i)) { initialPositions[i] = { ...bucketPositions[i] }; idTypes[i] = 'bucket' }
       else initialPositions[i] = { x: 0, y: 0 } // fallback
     })
     // compute pointer offset relative to stored position (preferred) to avoid jumps
@@ -447,6 +434,7 @@ export default function SortPage() {
       startClientX: e.clientX,
       startClientY: e.clientY,
       initialPositions,
+      idTypes,
       offsetX,
       offsetY
     }
@@ -476,7 +464,7 @@ export default function SortPage() {
 
   return (
     <section className="sort-page" style={{height:'100%',width:'100%'}} onContextMenu={onContextMenu}>
-      <div style={{position:'absolute',left:12,top:8,zIndex:60,color:'#fff',fontWeight:700}}>TransactionSorter v{APP_VERSION}</div>
+      {/* Title is shown in the floating menu (in App.tsx). Removed duplicate title here. */}
       <div ref={canvasRef} className="canvas" onPointerDown={onCanvasPointerDown} style={{height:'100%'}}>
         {loading && <div className="loading">Loading...</div>}
 

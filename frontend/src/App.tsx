@@ -3,7 +3,7 @@ import SortPage from './pages/Sort'
 import UploadPage from './pages/Upload'
 import StatisticsPage from './pages/Statistics'
 
-const VERSION = 'v0.2.0' // bumped to indicate the marquee + keyboard changes
+const VERSION = 'v0.3.0' // bumped to reflect UI changes
 
 export default function App() {
   const [showUpload, setShowUpload] = useState(false)
