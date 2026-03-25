@@ -1,6 +1,7 @@
 package com.transactionapp.transactionsorter.BucketService;
 
 
+import com.transactionapp.transactionsorter.TransactionCategorizationService.TokenCategoryStat;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
@@ -20,6 +21,9 @@ public class Bucket {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Transaction> transactions = new ArrayList<>();
     private String name;
+
+    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
+    private List<TokenCategoryStat> tokenStats = new ArrayList<>();
 
     protected Bucket(String name) {
         this.name = name;
