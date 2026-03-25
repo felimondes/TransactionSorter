@@ -11,6 +11,25 @@ export default defineConfig({
     emptyOutDir: false
   },
   server: {
-    port: 5173
+    port: 5173,
+    // Proxy API calls to the Spring Boot backend (running on :8080)
+    proxy: {
+      '/buckets': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/transactions': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/categorizer': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
   }
 })

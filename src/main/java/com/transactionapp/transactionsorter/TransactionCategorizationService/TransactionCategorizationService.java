@@ -60,15 +60,7 @@ public class TransactionCategorizationService {
     }
 
 
-    @EventListener
-    public void handleTransactionAdded(TransactionAddedToBucketEvent event) {
-        this.learn(event.getTransaction(), event.getBucket());
-    }
 
-    @EventListener
-    public void handleTransactionRemoved(TransactionRemovedFromBucketEvent event) {
-        this.unlearn(event.getTransaction(), event.getBucket());
-    }
 
     private String normalize(String input) {
         return input.toLowerCase()
@@ -90,8 +82,11 @@ public class TransactionCategorizationService {
     }
 
 
+    @EventListener
     @Transactional
-    public void learn(Transaction transaction, Bucket bucket) {
+    public void learn(TransactionAddedToBucketEvent event) {
+        Transaction transaction = event.getTransaction();
+        Bucket bucket = event.getBucket();
         List<String> tokens = extractTokens(transaction.getDescription());
 
         for (String token : tokens) {
@@ -109,8 +104,12 @@ public class TransactionCategorizationService {
         }
     }
 
+
+    @EventListener
     @Transactional
-    public void unlearn(Transaction transaction, Bucket bucket) {
+    public void unlearn(TransactionRemovedFromBucketEvent event) {
+        Transaction transaction = event.getTransaction();
+        Bucket bucket = event.getBucket();
         List<String> tokens = extractTokens(transaction.getDescription());
 
         for (String token : tokens) {
