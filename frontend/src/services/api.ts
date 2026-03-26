@@ -17,6 +17,8 @@ export type CategoryScore = {
   score: number
 }
 
+
+
 const handleResp = async (r: Response) => {
   if (!r.ok) {
     const t = await r.text()
