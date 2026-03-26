@@ -9,6 +9,7 @@ import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.StatisticsService.StatisticsService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.Given;
@@ -32,6 +33,12 @@ public class StatisticsSteps {
         this.transactionService = transactionService;
         this.statisticsService = statisticsService;
         this.bucketService = bucketService;
+    }
+
+    @After
+    public void cleanup() {
+        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
+        bucketService.deleteAllBuckets();
     }
 
 

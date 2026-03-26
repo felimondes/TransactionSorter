@@ -3,6 +3,7 @@ package com.transactionapp.transactionsorter.steps;
 import com.transactionapp.transactionsorter.TransactionParserService.TransactionParserService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -23,6 +24,11 @@ public class TransactionParserSteps {
     public TransactionParserSteps(TransactionParserService transactionParserService, TransactionService transactionService) {
         this.transactionParserService = transactionParserService;
         this.transactionService = transactionService;
+    }
+
+    @After
+    public void cleanup() {
+        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
     }
 
     MockMultipartFile file;

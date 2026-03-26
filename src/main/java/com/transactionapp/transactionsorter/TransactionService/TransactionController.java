@@ -40,4 +40,11 @@ public class TransactionController {
         transactionService.deleteTransaction(id);
     }
 
+
+    @GetMapping("/all")
+    public List<Transaction> getAllTransactions() {
+        return transactionService.getAllTransactions();
+    }
+
+
 }

@@ -1,11 +1,9 @@
-package com.transactionapp.transactionsorter.TransactionCategorizationService;
+package com.transactionapp.transactionsorter.SuggestionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.BucketService.TransactionRemovedFromBucketEvent;
 import com.transactionapp.transactionsorter.ErrorHandling.CategorizationException;
-import com.transactionapp.transactionsorter.TransactionService.Transaction;
-import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Service;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,29 +12,29 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-public class TransactionCategorizationService {
+public class SuggestionService {
 
-    private final TokenCategoryStatRepository repository;
+    private final SuggestionRepository repository;
 
-    public TransactionCategorizationService(TokenCategoryStatRepository repository) {
+    public SuggestionService(SuggestionRepository repository) {
         this.repository = repository;
     }
 
-    public CategoryScore categorize(String description) {
+    public SuggestionScore categorize(String description) {
         List<String> tokens = extractTokens(description);
 
         Map<String, Double> scores = new HashMap<>();
         Map<String, Long> keyToBucketId = new HashMap<>();
 
         for (String token : tokens) {
-            List<TokenCategoryStat> stats = repository.findById_Token(token);
+            List<Suggestion> stats = repository.findById_Token(token);
 
             int total = 0;
-            for (TokenCategoryStat stat : stats) {
+            for (Suggestion stat : stats) {
                 total += stat.getCount();
             }
 
-            for (TokenCategoryStat stat : stats) {
+            for (Suggestion stat : stats) {
                 double weight = (total > 0) ? (double) stat.getCount() / total : 0;
                 String key = stat.getCategory() + ":" + stat.getBucketId();
                 scores.put(key, weight);
@@ -44,13 +42,13 @@ public class TransactionCategorizationService {
             }
         }
 
-        CategoryScore best = null;
+        SuggestionScore best = null;
         for (Map.Entry<String, Double> entry : scores.entrySet()) {
             if (best == null || entry.getValue() > best.score()) {
                 String[] parts = entry.getKey().split(":");
                 String category = parts[0];
                 Long bucketId = keyToBucketId.get(entry.getKey());
-                best = new CategoryScore(bucketId, category, entry.getValue());
+                best = new SuggestionScore(bucketId, category, entry.getValue());
             }
         }
 
@@ -119,12 +117,16 @@ public class TransactionCategorizationService {
     public void cleanupOldTokens() {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
 
-        List<TokenCategoryStat> oldTokens = repository.findAll().stream()
+        List<Suggestion> oldTokens = repository.findAll().stream()
                 .filter(stat -> stat.getCount() == 1 && stat.getLastUpdated().isBefore(oneYearAgo))
                 .toList();
 
         repository.deleteAll(oldTokens);
 
         System.out.println("Cleaned up " + oldTokens.size() + " rare tokens.");
+    }
+
+    public void deleteAllSuggestions() {
+        repository.deleteAll();
     }
 }

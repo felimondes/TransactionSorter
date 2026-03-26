@@ -1,4 +1,4 @@
-package com.transactionapp.transactionsorter.TransactionCategorizationService;
+package com.transactionapp.transactionsorter.SuggestionService;
 
 import jakarta.persistence.Embeddable;
 
@@ -6,13 +6,13 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class TokenCategoryStatId implements Serializable {
+public class SuggestionId implements Serializable {
     private Long bucketId;
     private String token;
 
-    public TokenCategoryStatId() {}
+    public SuggestionId() {}
 
-    public TokenCategoryStatId(Long bucketId, String token) {
+    public SuggestionId(Long bucketId, String token) {
         this.bucketId = bucketId;
         this.token = token;
     }
@@ -29,8 +29,8 @@ public class TokenCategoryStatId implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof TokenCategoryStatId)) return false;
-        TokenCategoryStatId that = (TokenCategoryStatId) o;
+        if (!(o instanceof SuggestionId)) return false;
+        SuggestionId that = (SuggestionId) o;
         return Objects.equals(bucketId, that.bucketId) &&
                 Objects.equals(token, that.token);
     }

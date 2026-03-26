@@ -3,12 +3,12 @@ package com.transactionapp.transactionsorter.steps;
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBucketEvent;
-import com.transactionapp.transactionsorter.TransactionCategorizationService.CategoryScore;
-import com.transactionapp.transactionsorter.TransactionCategorizationService.TransactionCategorizationService;
+import com.transactionapp.transactionsorter.SuggestionService.SuggestionScore;
+import com.transactionapp.transactionsorter.SuggestionService.SuggestionService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 
-import io.cucumber.java.PendingException;
+import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -22,15 +22,15 @@ public class SortSuggestionSteps {
 
     TransactionService transactionService;
     BucketService bucketService;
-    TransactionCategorizationService transactionCategorizationService;
+    SuggestionService suggestionService;
     private String category;
     Bucket bucket;
     public SortSuggestionSteps(TransactionService  transactionService,
                                BucketService bucketService,
-                               TransactionCategorizationService transactionCategorizationService) {
+                               SuggestionService transactionCategorizationService) {
         this.bucketService = bucketService;
         this.transactionService = transactionService;
-        this.transactionCategorizationService = transactionCategorizationService;
+        this.suggestionService = transactionCategorizationService;
     }
 
 
@@ -45,6 +45,14 @@ public class SortSuggestionSteps {
             bucketService.addTransaction(bucket.getId(), transaction.getId());
         }
         return bucket;
+    }
+
+    @After
+    public void cleanup() {
+        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
+        bucketService.deleteAllBuckets();
+        suggestionService.deleteAllSuggestions();
+
     }
 
     @Given("that i previously sorted multiple transactions with the description containing the word {string} in the bucket labeled {string}")
@@ -63,7 +71,7 @@ public class SortSuggestionSteps {
         Transaction transaction = transactionService.createTransaction("hello " + arg0 );
 
         try {
-            CategoryScore categoryScore = transactionCategorizationService.categorize(transaction.getDescription());
+            SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
         } catch (Exception e) {
             this.category = "No suggestion";
@@ -71,11 +79,11 @@ public class SortSuggestionSteps {
 
     }
 
-    @When("i ask for suggestions on where to put a transaction that resembles no previous transactions")
+    @When("i ask for suggestions on a completly new transaction")
     public void iAskForSuggestionsOnWhereToPutATransactionThatResemblesNoPreviousTransactions() {
         Transaction transaction = transactionService.createTransaction("A" + Math.random() * 1000);
         try {
-            CategoryScore categoryScore = transactionCategorizationService.categorize(transaction.getDescription());
+            SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
         } catch (Exception e) {
             this.category = "No suggestion";
@@ -106,8 +114,8 @@ public class SortSuggestionSteps {
         Transaction tx2 = transactionService.createTransaction("fotex purchase");
 
         try {
-            Runnable task1 = () -> transactionCategorizationService.learn(new TransactionAddedToBucketEvent(tx1, bucket));
-            Runnable task2 = () -> transactionCategorizationService.learn(new TransactionAddedToBucketEvent(tx2, bucket));
+            Runnable task1 = () -> suggestionService.learn(new TransactionAddedToBucketEvent(tx1, bucket));
+            Runnable task2 = () -> suggestionService.learn(new TransactionAddedToBucketEvent(tx2, bucket));
 
             Thread t1 = new Thread(task1);
             Thread t2 = new Thread(task2);
