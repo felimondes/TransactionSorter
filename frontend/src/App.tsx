@@ -3,7 +3,7 @@ import SortPage from './pages/Sort'
 import UploadPage from './pages/Upload'
 import StatisticsPage from './pages/Statistics'
 
-const VERSION = 'v0.27.0' // comprehensive ID namespace separation - prevent tx/bucket collision
+const VERSION = 'v0.28.1' // fixed marquee behavior and bucket click/drag distinction
 
 export default function App() {
   const [showUpload, setShowUpload] = useState(false)

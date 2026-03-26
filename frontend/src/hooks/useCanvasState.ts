@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import * as api from '../services/api'
+import { Pos, DraggingState } from '../types/common'
 
 /**
  * ============================================================================
@@ -37,49 +38,8 @@ import * as api from '../services/api'
  * ============================================================================
  */
 
-export type Pos = { x: number; y: number }
-
-/**
- * Type-safe ID representation that includes the entity type
- * This prevents collisions between transaction #1 and bucket #1
- */
-export type TypedID = {
-  id: number
-  type: 'tx' | 'bucket'
-}
-
-export interface DraggingState {
-  mode: 'bucket' | 'tx' | 'group'
-  ids: TypedID[] // Changed from number[] to TypedID[]
-  startClientX: number
-  startClientY: number
-  initialPositions: Record<string, Pos> // Key is now "tx:1" or "bucket:1"
-  offsetX?: number
-  offsetY?: number
-  fromBucketOrigin?: number
-}
-
-function createTypedKey(id: number, type: 'tx' | 'bucket'): string {
-  return `${type}:${id}`
-}
-
-function parseTypedKey(key: string): TypedID | null {
-  const [type, id] = key.split(':')
-  if (type === 'tx' || type === 'bucket') {
-    return { id: Number(id), type }
-  }
-  return null
-}
-
-// Export utilities
-export const IdManager = {
-  createTypedKey,
-  parseTypedKey,
-  // Helper to get the key for a typed ID
-  getKey: (typedId: TypedID): string => createTypedKey(typedId.id, typedId.type),
-  // Helper to create a TypedID
-  create: (id: number, type: 'tx' | 'bucket'): TypedID => ({ id, type }),
-}
+// Re-export types for backward compatibility
+export type { Pos, DraggingState } from '../types/common'
 
 export function useCanvasState() {
   const [transactions, setTransactions] = useState<api.Transaction[]>([])
@@ -145,4 +105,5 @@ export function useCanvasState() {
     hoverTimers,
   }
 }
+
 

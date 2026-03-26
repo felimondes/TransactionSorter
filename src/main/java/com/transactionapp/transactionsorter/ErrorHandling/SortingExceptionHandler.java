@@ -12,7 +12,7 @@ import java.util.Map;
 public class SortingExceptionHandler {
 
     @ExceptionHandler(BucketNotFoundException.class)
-    public ResponseEntity<Map<String,Object>> handleTransactionNotFound(BucketNotFoundException ex) {
+    public ResponseEntity<Map<String,Object>> handleBucketNotFound(BucketNotFoundException ex) {
         Map<String,Object> body = Map.of(
                 "timestamp", LocalDateTime.now(),
                 "error", ex.getMessage(),
@@ -60,9 +60,6 @@ public class SortingExceptionHandler {
         );
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
-
-
-
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String,Object>> handleBadRequest(IllegalArgumentException ex) {

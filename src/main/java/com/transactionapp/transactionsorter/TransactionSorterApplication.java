@@ -24,26 +24,6 @@ public class TransactionSorterApplication {
         TransactionCategorizationService service = context.getBean(TransactionCategorizationService.class);
         TransactionRepository trepo = context.getBean(TransactionRepository.class);
         BucketRepository brepo = context.getBean(BucketRepository.class);
-
-        Bucket bucket = new Bucket("Test Bucket");
-        brepo.save(bucket);
-
-        Transaction tx1 = new Transaction("fotex purchase");
-        Transaction tx2 = new Transaction("fotex purchase");
-        trepo.save(tx1);
-        trepo.save(tx2);
-
-        Runnable task1 = () -> service.learn(new TransactionAddedToBucketEvent(tx1, bucket));
-        Runnable task2 = () -> service.learn(new TransactionAddedToBucketEvent(tx2, bucket));
-
-        Thread t1 = new Thread(task1);
-        Thread t2 = new Thread(task2);
-
-        t1.start();
-        t2.start();
-
-        t1.join();
-        t2.join();
     }
 }
 
