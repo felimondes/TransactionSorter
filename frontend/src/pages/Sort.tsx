@@ -37,10 +37,15 @@ export default function SortPage() {
     idTypes?: Record<number, 'tx' | 'bucket'>
     offsetX?: number
     offsetY?: number
+    fromBucketOrigin?: number
   }>(null)
 
   // context menu
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; bucketId?: number } | null>(null)
+
+  // bucket-panel state for right-clicking a bucket
+  const [bucketPanelTxs, setBucketPanelTxs] = useState<api.Transaction[]>([])
+  const [bucketPanelVisibleCount, setBucketPanelVisibleCount] = useState(10)
 
   // small helpers for formatting
   function formatDay(dateStr: string) {
@@ -144,6 +149,7 @@ export default function SortPage() {
   useEffect(() => {
     hoverTimers.current = {}
     setSuggestions({})
+    setVisibleSuggestionIds({})
   }, [transactions])
 
   // if multiple items are selected, hide suggestions
@@ -162,10 +168,17 @@ export default function SortPage() {
     if (!suggestionsEnabled || selectedCount > 1) return
 
     clearTimeout(hoverTimers.current[id])
-    hoverTimers.current[id] = setTimeout(async () => {
+    // longer hover delay for suggestion (only show after user intentionally hovers)
+    const timer = setTimeout(async () => {
+      // if the timer was cleared or replaced, abort
+      if (hoverTimers.current[id] !== timer) return
       const s = await api.categorize(description)
+      // still ensure this timer is the active one (user may have left)
+      if (hoverTimers.current[id] !== timer) return
       setSuggestions(prev => ({ ...prev, [id]: s }))
       setLastHoveredId(id)
+      setVisibleSuggestionIds(prev => ({ ...prev, [id]: true }))
+
       // position
       try {
         const canvas = canvasRef.current
@@ -191,17 +204,52 @@ export default function SortPage() {
           setSuggestionPos(prev => ({ ...prev, [id]: { left, top } }))
         }
       } catch (err) { }
-    }, 200)
+    }, 600)
+    hoverTimers.current[id] = timer as any
   }
   function clearSuggestion(id: number) {
-    clearTimeout(hoverTimers.current[id])
-    setTimeout(() => setSuggestions(prev => ({ ...prev, [id]: null })), 200)
+    // clear any pending timer and delete it so fetchSuggestion knows it was cancelled
+    try { clearTimeout(hoverTimers.current[id]) } catch (err) {}
+    try { delete hoverTimers.current[id] } catch (err) {}
+    // immediately remove suggestion visibility and suggestion/position so popup disappears fast
+    setVisibleSuggestionIds(prev => { const copy = { ...prev }; delete copy[id]; return copy })
+    setSuggestions(prev => { const copy = { ...prev }; delete copy[id]; return copy })
+    setSuggestionPos(prev => { const copy = { ...prev }; delete copy[id]; return copy })
     setLastHoveredId(null)
+  }
+
+  // open bucket panel at given client coordinates
+  function openBucketPanelAt(bucketId: number | undefined, clientX: number, clientY: number) {
+    const rawX = Number(clientX) || 0
+    const rawY = Number(clientY) || 0
+    const maxX = Math.max(0, window.innerWidth - 320)
+    const maxY = Math.max(0, window.innerHeight - 360)
+    const x = Math.min(rawX, maxX)
+    const y = Math.min(rawY, maxY)
+    setContextMenu({ x, y, bucketId })
+    if (bucketId != null) {
+      setBucketPanelVisibleCount(10)
+      api.getTransactionsInBucket(bucketId).then(list => {
+        try { const rev = Array.isArray(list) ? [...list].reverse() : []; setBucketPanelTxs(rev) } catch (err) { setBucketPanelTxs([]) }
+      }).catch(() => setBucketPanelTxs([]))
+    }
   }
 
   // --- pointer handlers for canvas & nodes ---
   useEffect(() => {
     function pointerMove(e: PointerEvent) {
+      // if user pressed on a bucket (click candidate) and moved enough, start a drag
+      if (clickCandidateRef.current) {
+        const cc = clickCandidateRef.current
+        const dx = Math.abs((e as any).clientX - cc.startX)
+        const dy = Math.abs((e as any).clientY - cc.startY)
+        if (dx > 6 || dy > 6) {
+          // start bucket drag using this pointer event
+          try { startNodeDrag(e as unknown as React.PointerEvent, 'bucket', cc.bucketId) } catch (err) {}
+          clickCandidateRef.current = null
+        }
+      }
+
       // dragging
       const d = draggingRef.current
       if (d) {
@@ -252,6 +300,14 @@ export default function SortPage() {
         }
       }
 
+      // cancel bucket click candidate if user moves pointer significantly (indicates drag)
+      if (clickCandidateRef.current) {
+        const cc = clickCandidateRef.current
+        const dx = Math.abs((e as any).clientX - cc.startX)
+        const dy = Math.abs((e as any).clientY - cc.startY)
+        if (dx > 6 || dy > 6) clickCandidateRef.current = null
+      }
+
       // marquee selection update if selecting
       if (isSelectingRef.current) {
         const canvas = canvasRef.current
@@ -291,12 +347,32 @@ export default function SortPage() {
             if (txIds.length > 0) {
               Promise.all(txIds.map(id => api.addTransactionToBucket(found!, id))).then(() => load())
             }
+          } else {
+            // if drag originated from a bucket panel and was dropped onto empty canvas, remove tx from origin bucket
+            if (d.fromBucketOrigin != null) {
+              const txIds = d.ids.filter(id => d.idTypes ? d.idTypes[id] === 'tx' : Object.prototype.hasOwnProperty.call(txPositions, id))
+              if (txIds.length > 0) {
+                Promise.all(txIds.map(id => api.removeTransactionFromBucket(d.fromBucketOrigin!, id))).then(() => load())
+              }
+            }
           }
         }
         draggingRef.current = null
         setHoverBucket(null)
         // clear user-select lock
         document.body.style.userSelect = ''
+      }
+
+      // if a bucket click was detected (no movement), open the bucket panel
+      if (clickCandidateRef.current) {
+        const cc = clickCandidateRef.current
+        const dt = Date.now() - cc.time
+        const dx = Math.abs(e.clientX - cc.startX)
+        const dy = Math.abs(e.clientY - cc.startY)
+        if (dt < 500 && dx <= 6 && dy <= 6) {
+          openBucketPanelAt(cc.bucketId, e.clientX, e.clientY)
+        }
+        clickCandidateRef.current = null
       }
 
       // finish marquee selection - compute rectangle from startPointRef + event (avoid stale state)
@@ -452,7 +528,7 @@ export default function SortPage() {
     document.body.style.userSelect = 'none'
   }
 
-  function onContextMenu(e: React.MouseEvent) {
+  function onContextMenu(e: React.MouseEvent, bucketId?: number) {
     e.preventDefault()
     // clamp to viewport so the menu doesn't end up off-screen
     const rawX = Number(e.clientX) || 0
@@ -462,7 +538,14 @@ export default function SortPage() {
     const x = Math.min(rawX, maxX)
     const y = Math.min(rawY, maxY)
     console.debug('Sort: onContextMenu', rawX, rawY, 'clamped to', x, y)
-    setContextMenu({ x, y })
+    setContextMenu({ x, y, bucketId })
+    // if context menu opened on a bucket, fetch its transactions (reverse order newest-first)
+    if (bucketId != null) {
+      setBucketPanelVisibleCount(10)
+      api.getTransactionsInBucket(bucketId).then(list => {
+        try { const rev = Array.isArray(list) ? [...list].reverse() : []; setBucketPanelTxs(rev) } catch (err) { setBucketPanelTxs([]) }
+      }).catch(() => setBucketPanelTxs([]))
+    }
   }
 
   async function createBucketAtContext() {
@@ -514,6 +597,9 @@ export default function SortPage() {
     return () => window.removeEventListener('contextmenu', onGlobalContext)
   }, [])
 
+  const clickCandidateRef = useRef<{ bucketId: number; startX: number; startY: number; time: number } | null>(null)
+  const [visibleSuggestionIds, setVisibleSuggestionIds] = useState<Record<number, boolean>>({})
+
   return (
     <div className="page sort-page">
       <div className="canvas" ref={canvasRef} onContextMenu={(e) => { e.preventDefault(); onContextMenu(e) }} onPointerDown={onCanvasPointerDown}>
@@ -524,13 +610,25 @@ export default function SortPage() {
           const isHovered = hoverBucket === bucket.id
           return (
             <div
-              key={id}
-              ref={el => { nodeRefs.current[`bucket-${id}`] = el }}
-              className={`node bucket ${selectedMap[bucket.id] ? 'selected' : ''} ${isHovered ? 'hover' : ''}`}
-              style={{ left: pos.x, top: pos.y, width: 180, height: 120 }}
-              onPointerDown={e => startNodeDrag(e, 'bucket', bucket.id)}
-              onContextMenu={e => { e.preventDefault(); onContextMenu(e) }}
-            >
+               key={id}
+               ref={el => { nodeRefs.current[`bucket-${id}`] = el }}
+               className={`node bucket ${selectedMap[bucket.id] ? 'selected' : ''} ${isHovered ? 'hover' : ''}`}
+               style={{ left: pos.x, top: pos.y, width: 180, height: 120 }}
+               onPointerDown={e => { if (e.button === 0) clickCandidateRef.current = { bucketId: bucket.id, startX: e.clientX, startY: e.clientY, time: Date.now() }; /* drag will start on pointermove */ }}
+               onPointerUp={(e) => {
+                 // open panel on left click only if not dragged
+                 if (e.button === 0 && clickCandidateRef.current && clickCandidateRef.current.bucketId === bucket.id) {
+                   const dx = Math.abs(e.clientX - clickCandidateRef.current.startX)
+                   const dy = Math.abs(e.clientY - clickCandidateRef.current.startY)
+                   const dt = Date.now() - clickCandidateRef.current.time
+                   if (dx <= 6 && dy <= 6 && dt < 500) {
+                     openBucketPanelAt(bucket.id, e.clientX, e.clientY)
+                   }
+                 }
+                 clickCandidateRef.current = null
+               }}
+               onContextMenu={e => { e.preventDefault(); onContextMenu(e, bucket.id) }}
+              >
               <div className="bucket-content">
                 <div className="bucket-label">{bucket.name}</div>
                 <div className="bucket-tx-count">{txCount} transaction{txCount !== 1 ? 's' : ''}</div>
@@ -567,38 +665,123 @@ export default function SortPage() {
         {loading && <div className="loading-overlay">Loading...</div>}
 
         {/* render suggestion popups inside the canvas so they align with node positions */}
-        {Object.entries(suggestions).map(([idStr, s]) => {
-          const id = Number(idStr)
-          if (!s) return null
-          const pos = suggestionPos[id]
-          if (!pos) return null
-          const bucket = buckets.find(b => b.id === s.bucketId)
-          const bucketLabel = bucket ? bucket.name : `bucket ${s.bucketId}`
-          return (
-            <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
-              <div><strong>Suggested:</strong> {s.category} — <em>{bucketLabel}</em></div>
-              <small>press "s" to accept</small>
-            </div>
-          )
-        })}
+        {/* render suggestion popups even when suggestion is null (No suggestion) */}
+        {(() => {
+          const keys = new Set<string>([...Object.keys(suggestions), ...Object.keys(suggestionPos)])
+          return Array.from(keys).map(idStr => {
+            const id = Number(idStr)
+            const s = suggestions[id]
+            const pos = suggestionPos[id]
+            if (!pos) return null
+            // only render if the hover delay passed and popup is visible for this id
+            if (!visibleSuggestionIds[id]) return null
+            if (!s) {
+              return (
+                <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
+                  <div><strong>No suggestion</strong></div>
+                </div>
+              )
+            }
+            const bucket = buckets.find(b => b.id === s.bucketId)
+            const bucketLabel = bucket ? bucket.name : `bucket ${s.bucketId}`
+            // avoid duplicate display if category equals bucket label
+            const showBucket = !(String(s.category || '').toLowerCase() === String(bucketLabel || '').toLowerCase())
+            return (
+              <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
+                <div><strong>Suggested:</strong> {s.category}{showBucket ? ' — ' : ' '}{showBucket ? <em>{bucketLabel}</em> : null}</div>
+                <small>press "s" to accept</small>
+              </div>
+            )
+          })
+        })()}
 
       </div>
       {contextMenu && (
-        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          <button
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onClick={() => openUploadFromContext()}
-          >Upload</button>
-          <button
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onClick={() => openStatsFromContext()}
-          >Statistics</button>
-          <hr style={{border:'none',borderTop:'1px solid rgba(0,0,0,0.06)',margin:'6px 0'}}/>
-          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); createBucketAtContext() }} onClick={() => createBucketAtContext()}>Create bucket</button>
-          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSuggestionsEnabled(prev => !prev); setContextMenu(null) }} onClick={() => { setSuggestionsEnabled(prev => !prev); setContextMenu(null) }}>{suggestionsEnabled ? 'Disable suggestions' : 'Enable suggestions'}</button>
-          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu(null) }} onClick={() => setContextMenu(null)}>Cancel</button>
-        </div>
+        // if right-clicked a bucket show bucket-panel with transactions, else show normal context menu
+        contextMenu.bucketId ? (
+          <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y, width:320, maxHeight:360, overflow:'hidden' }}>
+            <div style={{fontWeight:700,padding:'6px 8px'}}>Bucket: {buckets.find(b=>b.id===contextMenu.bucketId)?.name ?? 'Bucket'}</div>
+            <div style={{height:260,overflow:'auto',padding:'6px 8px'}} onScroll={(ev) => {
+              const el = ev.target as HTMLElement
+              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) {
+                setBucketPanelVisibleCount(prev => Math.min((bucketPanelTxs || []).length, prev + 10))
+              }
+            }}>
+              {(bucketPanelTxs || []).slice(0, bucketPanelVisibleCount).map(tx => (
+                <div key={`panel-tx-${tx.id}`} className={`node transaction ${selectedMap[tx.id] ? 'selected' : ''}`} style={{position:'relative',left:0,top:0,width:'100%',height:60,marginBottom:8}} onPointerDown={(e) => {
+                  // start drag from bucket panel
+                  try { e.preventDefault(); e.stopPropagation() } catch {}
+                  // determine selection set
+                  const selectedIds = Object.keys(selectedMap).map(k => Number(k)).filter(k => selectedMap[k])
+                  const ids = selectedMap[tx.id] ? selectedIds : [tx.id]
+                  // ensure txPositions exist for these ids (place them near pointer)
+                  const canvas = canvasRef.current
+                  if (!canvas) return
+                  const cRect = canvas.getBoundingClientRect()
+                  const pointerCanvasX = e.clientX - cRect.left + (canvas.scrollLeft || 0)
+                  const pointerCanvasY = e.clientY - cRect.top + (canvas.scrollTop || 0)
+                  setTxPositions(prev => {
+                    const copy = { ...prev }
+                    ids.forEach((id, idx) => {
+                      if (!Object.prototype.hasOwnProperty.call(copy, id)) {
+                        copy[id] = { x: Math.max(0, Math.round(pointerCanvasX + idx * 10)), y: Math.max(0, Math.round(pointerCanvasY + idx * 10)) }
+                      }
+                    })
+                    return copy
+                  })
+                  // set draggingRef to start dragging these tx ids
+                  const initialPositions: Record<number, Pos> = {}
+                  ids.forEach(i => { initialPositions[i] = (txPositions[i] || { x: Math.max(0, Math.round(e.clientX)), y: Math.max(0, Math.round(e.clientY)) }) })
+                  draggingRef.current = {
+                    mode: ids.length > 1 ? 'group' : 'tx',
+                    ids,
+                    startClientX: e.clientX,
+                    startClientY: e.clientY,
+                    initialPositions,
+                    idTypes: Object.fromEntries(ids.map(i => [i, 'tx'])) as any,
+                    offsetX: 0,
+                    offsetY: 0,
+                    fromBucketOrigin: contextMenu.bucketId
+                  }
+                  document.body.style.userSelect = 'none'
+                }} onClick={(e) => { e.stopPropagation(); setSelectedMap(prev => ({ ...prev, [tx.id]: !prev[tx.id] })) }}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',height:'100%'}}>
+                    <div style={{paddingRight:8,flex:1}}>
+                      <div style={{fontWeight:600}}>{tx.description}</div>
+                      <div style={{fontSize:12,color:'#666'}}>{formatDay(tx.date)}</div>
+                    </div>
+                    <div style={{marginLeft:8,fontWeight:700}} className={`transaction-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>{formatAmount(tx.amount)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:8,display:'flex',gap:8,justifyContent:'space-between'}}>
+              <button onClick={() => { setContextMenu(null); setBucketPanelTxs([]) }}>Close</button>
+              <button disabled={(bucketPanelTxs||[]).length <= bucketPanelVisibleCount} onClick={() => setBucketPanelVisibleCount(prev => Math.min((bucketPanelTxs||[]).length, prev + 10))}>Load more</button>
+            </div>
+          </div>
+        ) : (
+          <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+            <button
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={() => openUploadFromContext()}
+            >Upload</button>
+            <button
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={() => openStatsFromContext()}
+            >Statistics</button>
+            <hr style={{border:'none',borderTop:'1px solid rgba(0,0,0,0.06)',margin:'6px 0'}}/>
+            <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); createBucketAtContext() }} onClick={() => createBucketAtContext()}>Create bucket</button>
+            <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSuggestionsEnabled(prev => !prev); setContextMenu(null) }} onClick={() => { setSuggestionsEnabled(prev => !prev); setContextMenu(null) }}>{suggestionsEnabled ? 'Disable suggestions' : 'Enable suggestions'}</button>
+            <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu(null) }} onClick={() => setContextMenu(null)}>Cancel</button>
+          </div>
+        )
       )}
     </div>
   )
 }
+
+
+
+
+
