@@ -550,6 +550,8 @@ export default function SortPage() {
               style={{ left: pos.x, top: pos.y, width: 180, height: 60 }}
               onPointerDown={e => startNodeDrag(e, 'tx', tx.id)}
               onContextMenu={e => { e.preventDefault(); onContextMenu(e) }}
+              onPointerEnter={(e) => { const target = e.currentTarget as HTMLElement; fetchSuggestion(tx.id, tx.description, target) }}
+              onPointerLeave={() => clearSuggestion(tx.id)}
             >
               <div className="transaction-content">
                 <div className="transaction-description">{tx.description}</div>
@@ -563,6 +565,25 @@ export default function SortPage() {
           <div className="marquee-selection" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
         )}
         {loading && <div className="loading-overlay">Loading...</div>}
+
+        {/* render suggestion popups inside the canvas so they align with node positions */}
+        {Object.entries(suggestions).map(([idStr, s]) => {
+          const id = Number(idStr)
+          if (!s) return null
+          const pos = suggestionPos[id]
+          if (!pos) return null
+          return (
+            <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
+              <div><strong>Suggested:</strong> {s.category} (bucket {s.bucketId})</div>
+              <small>score: {Math.round((s.score || 0) * 100)}%</small>
+              <div style={{marginTop:8,display:'flex',gap:8}}>
+                <button onClick={() => { addToBucket(s.bucketId, id).catch(console.error); setSuggestions(prev => ({ ...prev, [id]: null })) }}>Accept</button>
+                <button onClick={() => { setSuggestions(prev => ({ ...prev, [id]: null })); setLastHoveredId(null) }}>Dismiss</button>
+              </div>
+            </div>
+          )
+        })}
+
       </div>
       {contextMenu && (
         <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>

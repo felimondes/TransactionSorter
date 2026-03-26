@@ -3,7 +3,7 @@ import SortPage from './pages/Sort'
 import UploadPage from './pages/Upload'
 import StatisticsPage from './pages/Statistics'
 
-const VERSION = 'v0.8.0' // bumped to reflect UI changes
+const VERSION = 'v0.9.0' // bumped to reflect UI changes
 
 export default function App() {
   const [showUpload, setShowUpload] = useState(false)

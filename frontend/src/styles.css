@@ -42,8 +42,9 @@ body{font-family:Inter, Arial, Helvetica, sans-serif;background:#f6f6f6;color:#1
   box-shadow:0 6px 18px rgba(0,0,0,0.06);
   border:1px solid rgba(0,0,0,0.06);
 }
-.node.bucket{z-index:50}
-.node.transaction{z-index:40}
+/* flip stacking: transactions should be above buckets */
+.node.bucket{z-index:40}
+.node.transaction{z-index:50}
 .node .node-title{font-weight:700;font-size:13px;user-select:none}
 .node.selected{outline:2px solid rgba(0,0,0,0.06);transform:scale(1.02) rotate(var(--rot,0deg));box-shadow:0 18px 40px rgba(0,0,0,0.12)}
 .node.highlight{box-shadow:0 18px 48px rgba(43,108,176,0.12);border-color:var(--accent);transform:translateY(-4px) rotate(var(--rot,0deg))}
@@ -61,8 +62,8 @@ body{font-family:Inter, Arial, Helvetica, sans-serif;background:#f6f6f6;color:#1
 /* marquee (fixed selector name used by JSX) */
 .marquee-selection{position:absolute;border:2px dashed rgba(43,108,176,0.7);background:linear-gradient(180deg, rgba(43,108,176,0.06), rgba(43,108,176,0.03));pointer-events:none;z-index:2000;border-radius:6px}
 
-/* suggestion popup */
-.suggestion.absolute{position:absolute;z-index:950;background:linear-gradient(180deg, #ffffff, #fbfbfb);padding:8px;border-radius:8px;color:#111;border:1px solid rgba(0,0,0,0.06);box-shadow:0 8px 30px rgba(0,0,0,0.12)}
+/* suggestion popup - ensure above nodes but within canvas stacking */
+.suggestion.absolute{position:absolute;z-index:3000;background:linear-gradient(180deg, #ffffff, #fbfbfb);padding:8px;border-radius:8px;color:#111;border:1px solid rgba(0,0,0,0.06);box-shadow:0 8px 30px rgba(0,0,0,0.12)}
 .suggestion.absolute div{font-size:13px}
 .suggestion.absolute small{display:block;margin-top:6px;color:#666;font-size:12px}
 
