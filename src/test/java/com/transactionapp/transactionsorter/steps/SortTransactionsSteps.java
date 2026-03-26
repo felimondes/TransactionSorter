@@ -30,6 +30,11 @@ public class SortTransactionsSteps {
     Long bucketId;
     Exception e;
 
+    @After
+    public void cleanup() {
+        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
+        bucketService.deleteAllBuckets();
+    }
 
     public SortTransactionsSteps(BucketService bucketService, TransactionService transactionService) {
         this.bucketService = bucketService;

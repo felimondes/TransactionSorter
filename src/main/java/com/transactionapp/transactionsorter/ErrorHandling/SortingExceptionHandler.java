@@ -61,6 +61,16 @@ public class SortingExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(HardRuleException.class)
+    public ResponseEntity<Map<String,Object>> handleHardRule(HardRuleException ex) {
+        Map<String,Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "error", ex.getMessage(),
+                "status", HttpStatus.BAD_REQUEST.value()
+        );
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
 
 
 

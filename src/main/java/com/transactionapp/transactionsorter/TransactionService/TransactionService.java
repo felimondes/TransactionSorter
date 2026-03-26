@@ -3,6 +3,7 @@ package com.transactionapp.transactionsorter.TransactionService;
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.StatisticsService.BucketAverage;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;import java.time.LocalDate;import java.util.List;
@@ -11,9 +12,12 @@ import java.math.BigDecimal;import java.time.LocalDate;import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public TransactionService(TransactionRepository transactionRepository) {
+    public TransactionService(TransactionRepository transactionRepository,
+                              ApplicationEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // Create a new transaction
@@ -24,7 +28,9 @@ public class TransactionService {
 
     public Transaction createTransaction(String description) {
         Transaction transaction = new Transaction(description);
-        return transactionRepository.save(transaction);
+        transactionRepository.save(transaction);
+        eventPublisher.publishEvent(new TransactionCreatedEvent(transaction));
+        return transaction;
     }
 
     public Transaction getTransactionById(Long transactionId) {
@@ -57,11 +63,11 @@ public class TransactionService {
         return transactionRepository.findByBucket(bucket);
     }
 
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
     //testing
 
-        public List<Transaction> getAllTransactions() {
-            return transactionRepository.findAll();
-        }
 
     public List<BucketAverage> findAveragePerMonthByBucket() {
         return transactionRepository.findAveragePerMonthByBucket();

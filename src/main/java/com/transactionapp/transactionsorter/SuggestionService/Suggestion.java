@@ -1,4 +1,4 @@
-package com.transactionapp.transactionsorter.TransactionCategorizationService;
+package com.transactionapp.transactionsorter.SuggestionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import jakarta.persistence.*;
@@ -6,10 +6,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-public class TokenCategoryStat {
+public class Suggestion {
 
     @EmbeddedId
-    private TokenCategoryStatId id;
+    private SuggestionId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("bucketId") // maps the bucketId inside TokenCategoryStatId
@@ -21,10 +21,10 @@ public class TokenCategoryStat {
     private String category;
 
 
-    public TokenCategoryStat() {}
+    public Suggestion() {}
 
-    public TokenCategoryStat(String token, Bucket bucket) {
-        this.id = new TokenCategoryStatId(bucket.getId(), token);
+    public Suggestion(String token, Bucket bucket) {
+        this.id = new SuggestionId(bucket.getId(), token);
         this.bucket = bucket;
         this.count = 0;
         this.lastUpdated = LocalDateTime.now();
@@ -42,7 +42,7 @@ public class TokenCategoryStat {
         this.count--;
     }
 
-    public TokenCategoryStatId getId() {
+    public SuggestionId getId() {
         return id;
     }
 

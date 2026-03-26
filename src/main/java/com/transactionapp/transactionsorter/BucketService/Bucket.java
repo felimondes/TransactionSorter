@@ -1,7 +1,8 @@
 package com.transactionapp.transactionsorter.BucketService;
 
 
-import com.transactionapp.transactionsorter.TransactionCategorizationService.TokenCategoryStat;
+import com.transactionapp.transactionsorter.HardRuleService.HardRule;
+import com.transactionapp.transactionsorter.SuggestionService.Suggestion;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
@@ -23,7 +24,10 @@ public class Bucket {
     private String name;
 
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
-    private List<TokenCategoryStat> tokenStats = new ArrayList<>();
+    private List<Suggestion> tokenStats = new ArrayList<>();
+
+    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HardRule> hardRules;
 
     public Bucket(String name) {
         this.name = name;

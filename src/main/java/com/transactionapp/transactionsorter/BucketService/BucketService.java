@@ -101,4 +101,7 @@ public class BucketService {
         }
     }
 
+    public Bucket getBucket(Long bucketId) {
+        return bucketRepository.findById(bucketId).orElseThrow(() -> new BucketNotFoundException("Bucket not found with id: " + bucketId));
+    }
 }
