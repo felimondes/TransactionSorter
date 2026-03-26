@@ -70,9 +70,12 @@ export default function SortPage() {
 
       // ensure we have positions for all buckets (preserve existing positions)
       const newBucketPositions = { ...bucketPositions }
+      // ensure buckets spawn below the floating menu (menu sits at top-left around ~16px + padding)
+      // set a safe baseline to avoid spawning underneath the menu
+      const bucketBaselineY = 96
       b.forEach((bucket, i) => {
         if (!Object.prototype.hasOwnProperty.call(newBucketPositions, bucket.id)) {
-          newBucketPositions[bucket.id] = { x: 40, y: 40 + i * 120 }
+          newBucketPositions[bucket.id] = { x: 40, y: bucketBaselineY + i * 120 }
         }
       })
       setBucketPositions(newBucketPositions)
@@ -102,6 +105,8 @@ export default function SortPage() {
   // clicking anywhere outside context menu or canvas should hide context menu and clear selection
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
+      // ignore right-clicks / non-left buttons so contextmenu can open unhindered
+      if (typeof (e as any).button === 'number' && (e as any).button !== 0) return
       const target = e.target as HTMLElement
       // hide context menu if click outside it
       if (target && !target.closest('.context-menu')) {
@@ -449,7 +454,15 @@ export default function SortPage() {
 
   function onContextMenu(e: React.MouseEvent) {
     e.preventDefault()
-    setContextMenu({ x: e.clientX, y: e.clientY })
+    // clamp to viewport so the menu doesn't end up off-screen
+    const rawX = Number(e.clientX) || 0
+    const rawY = Number(e.clientY) || 0
+    const maxX = Math.max(0, window.innerWidth - 220)
+    const maxY = Math.max(0, window.innerHeight - 120)
+    const x = Math.min(rawX, maxX)
+    const y = Math.min(rawY, maxY)
+    console.debug('Sort: onContextMenu', rawX, rawY, 'clamped to', x, y)
+    setContextMenu({ x, y })
   }
 
   async function createBucketAtContext() {
@@ -462,76 +475,111 @@ export default function SortPage() {
     } catch (err) { alert('Could not create bucket') }
   }
 
-  return (
-    <section className="sort-page" style={{height:'100%',width:'100%'}} onContextMenu={onContextMenu}>
-      {/* Title is shown in the floating menu (in App.tsx). Removed duplicate title here. */}
-      <div ref={canvasRef} className="canvas" onPointerDown={onCanvasPointerDown} style={{height:'100%'}}>
-        {loading && <div className="loading">Loading...</div>}
+  // helper to open Upload/Stats robustly (calls window helper if present, then dispatches event as fallback)
+  function openUploadFromContext() {
+    // schedule to next tick so pointer events finish and modal's click-to-close doesn't immediately fire
+    setTimeout(() => {
+      try { if ((window as any).openUploadModal) (window as any).openUploadModal() } catch (err) {}
+      try { window.dispatchEvent(new Event('openUploadModal')) } catch (err) {}
+    }, 0)
+    setContextMenu(null)
+  }
+  function openStatsFromContext() {
+    setTimeout(() => {
+      try { if ((window as any).openStatisticsModal) (window as any).openStatisticsModal() } catch (err) {}
+      try { window.dispatchEvent(new Event('openStatisticsModal')) } catch (err) {}
+    }, 0)
+    setContextMenu(null)
+  }
 
-        {/* buckets as nodes */}
-        {buckets.map(b => {
-          const pos = bucketPositions[b.id] || { x: 20, y: 20 }
+  // ensure right-clicks open our custom menu even if React handlers don't fire
+  useEffect(() => {
+    function onGlobalContext(e: MouseEvent) {
+      try {
+        const target = e.target as HTMLElement
+        if (target && target.closest('.canvas')) {
+          e.preventDefault()
+          const rawX = Number((e as any).clientX) || 0
+          const rawY = Number((e as any).clientY) || 0
+          const maxX = Math.max(0, window.innerWidth - 220)
+          const maxY = Math.max(0, window.innerHeight - 120)
+          const x = Math.min(rawX, maxX)
+          const y = Math.min(rawY, maxY)
+          console.debug('Global contextmenu detected on canvas', rawX, rawY, 'clamped to', x, y)
+          setContextMenu({ x, y })
+        }
+      } catch (err) { }
+    }
+    window.addEventListener('contextmenu', onGlobalContext)
+    return () => window.removeEventListener('contextmenu', onGlobalContext)
+  }, [])
+
+  return (
+    <div className="page sort-page">
+      <div className="canvas" ref={canvasRef} onContextMenu={(e) => { e.preventDefault(); onContextMenu(e) }} onPointerDown={onCanvasPointerDown}>
+        {Object.entries(bucketPositions).map(([id, pos]) => {
+          const bucket = buckets.find(b => b.id === Number(id))
+          if (!bucket) return null
+          const txCount = transactions.filter(t => t.bucketId === bucket.id).length
+          const isHovered = hoverBucket === bucket.id
           return (
-            <div key={b.id}
-                 ref={el => { nodeRefs.current[`bucket-${b.id}`] = el }}
-                 className={`node bucket-node ${hoverBucket === b.id ? 'highlight' : ''}`}
-                 style={{ left: pos.x, top: pos.y }}
-                 onPointerDown={e => startNodeDrag(e, 'bucket', b.id)}>
-              <div className="node-title">{b.name}</div>
+            <div
+              key={id}
+              ref={el => { nodeRefs.current[`bucket-${id}`] = el }}
+              className={`node bucket ${selectedMap[bucket.id] ? 'selected' : ''} ${isHovered ? 'hover' : ''}`}
+              style={{ left: pos.x, top: pos.y, width: 180, height: 120 }}
+              onPointerDown={e => startNodeDrag(e, 'bucket', bucket.id)}
+              onContextMenu={e => { e.preventDefault(); onContextMenu(e) }}
+            >
+              <div className="bucket-content">
+                <div className="bucket-label">{bucket.name}</div>
+                <div className="bucket-tx-count">{txCount} transaction{txCount !== 1 ? 's' : ''}</div>
+              </div>
+              {isHovered && <div className="bucket-hover-indicator" />}
             </div>
           )
         })}
-
-        {/* transactions as nodes */}
-        {transactions.map(t => {
-          const pos = txPositions[t.id] || { x: 320, y: 20 }
-          const day = formatDay(t.date)
-          const amtColor = t.amount >= 0 ? '#1db954' : '#888'
+        {Object.entries(txPositions).map(([id, pos]) => {
+          const tx = transactions.find(t => t.id === Number(id))
+          if (!tx) return null
           return (
-            <div key={t.id}
-                 ref={el => { nodeRefs.current[`tx-${t.id}`] = el }}
-                 className={`node tx-node ${selectedMap[t.id] ? 'selected' : ''}`}
-                 style={{ left: pos.x, top: pos.y }}
-                 onPointerDown={e => startNodeDrag(e, 'tx', t.id)}
-                 onPointerEnter={e => { setLastHoveredId(t.id); fetchSuggestion(t.id, t.description, e.currentTarget as HTMLElement) }}
-                 onPointerLeave={() => { clearSuggestion(t.id); setLastHoveredId(null) }}>
-              <div className="node-title">{t.description}</div>
-              <div style={{display:'flex',gap:8,alignItems:'center',marginTop:6}}>
-                <div style={{background:'#222',color:'#fff',padding:'2px 6px',borderRadius:4,fontSize:12}}>{day}</div>
-                <div style={{color:amtColor,fontSize:13,opacity:0.95}}>{formatAmount(t.amount)}</div>
+            <div
+              key={id}
+              ref={el => { nodeRefs.current[`tx-${id}`] = el }}
+              className={`node transaction ${selectedMap[tx.id] ? 'selected' : ''}`}
+              style={{ left: pos.x, top: pos.y, width: 180, height: 60 }}
+              onPointerDown={e => startNodeDrag(e, 'tx', tx.id)}
+              onContextMenu={e => { e.preventDefault(); onContextMenu(e) }}
+            >
+              <div className="transaction-content">
+                <div className="transaction-description">{tx.description}</div>
+                <div className="transaction-amount">{formatAmount(tx.amount)}</div>
+                <div className="transaction-date">{formatDay(tx.date)}</div>
               </div>
             </div>
           )
         })}
-
-        {/* render suggestion popups at canvas level */}
-        {Object.keys(suggestions).map(k => {
-          const id = Number(k)
-          const s = suggestions[id]
-          if (!s) return null
-          const pos = suggestionPos[id] || { left: 0, top: 0 }
-          return (
-            <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
-              <div>Suggestion: {s.category}</div>
-              <div style={{opacity:0.8,fontSize:12,marginTop:6}}>Press "s" to accept suggestion</div>
-            </div>
-          )
-        })}
-
-        {/* marquee overlay */}
         {marquee && (
-          <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
+          <div className="marquee-selection" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
         )}
-
+        {loading && <div className="loading-overlay">Loading...</div>}
       </div>
-
       {contextMenu && (
         <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          <button onClick={createBucketAtContext}>Create bucket</button>
-          <button onClick={() => { setSuggestionsEnabled(prev => !prev); setContextMenu(null) }}>{suggestionsEnabled ? 'Disable suggestions' : 'Enable suggestions'}</button>
-          <button onClick={() => setContextMenu(null)}>Cancel</button>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={() => openUploadFromContext()}
+          >Upload</button>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={() => openStatsFromContext()}
+          >Statistics</button>
+          <hr style={{border:'none',borderTop:'1px solid rgba(0,0,0,0.06)',margin:'6px 0'}}/>
+          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); createBucketAtContext() }} onClick={() => createBucketAtContext()}>Create bucket</button>
+          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSuggestionsEnabled(prev => !prev); setContextMenu(null) }} onClick={() => { setSuggestionsEnabled(prev => !prev); setContextMenu(null) }}>{suggestionsEnabled ? 'Disable suggestions' : 'Enable suggestions'}</button>
+          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu(null) }} onClick={() => setContextMenu(null)}>Cancel</button>
         </div>
       )}
-    </section>
+    </div>
   )
 }
