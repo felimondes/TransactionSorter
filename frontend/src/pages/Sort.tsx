@@ -555,7 +555,7 @@ export default function SortPage() {
             >
               <div className="transaction-content">
                 <div className="transaction-description">{tx.description}</div>
-                <div className="transaction-amount">{formatAmount(tx.amount)}</div>
+                <div className={`transaction-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>{formatAmount(tx.amount)}</div>
                 <div className="transaction-date">{formatDay(tx.date)}</div>
               </div>
             </div>
@@ -572,14 +572,12 @@ export default function SortPage() {
           if (!s) return null
           const pos = suggestionPos[id]
           if (!pos) return null
+          const bucket = buckets.find(b => b.id === s.bucketId)
+          const bucketLabel = bucket ? bucket.name : `bucket ${s.bucketId}`
           return (
             <div key={`suggest-${id}`} className="suggestion absolute" style={{ left: pos.left, top: pos.top }}>
-              <div><strong>Suggested:</strong> {s.category} (bucket {s.bucketId})</div>
-              <small>score: {Math.round((s.score || 0) * 100)}%</small>
-              <div style={{marginTop:8,display:'flex',gap:8}}>
-                <button onClick={() => { addToBucket(s.bucketId, id).catch(console.error); setSuggestions(prev => ({ ...prev, [id]: null })) }}>Accept</button>
-                <button onClick={() => { setSuggestions(prev => ({ ...prev, [id]: null })); setLastHoveredId(null) }}>Dismiss</button>
-              </div>
+              <div><strong>Suggested:</strong> {s.category} — <em>{bucketLabel}</em></div>
+              <small>press "s" to accept</small>
             </div>
           )
         })}

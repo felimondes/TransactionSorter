@@ -16,10 +16,13 @@ export default function UploadPage() {
     setSubmitting(true)
     try {
       await api.uploadTransactions(month, file)
+      // notify listeners (Sort) that new transactions are available
+      try { window.dispatchEvent(new Event('transactionsUploaded')) } catch (err) {}
+      // try to close the upload modal immediately
+      try { if ((window as any).closeUploadModal) (window as any).closeUploadModal() } catch (err) {}
+      try { window.dispatchEvent(new Event('closeUploadModal')) } catch (err) {}
       setMessage('Uploaded')
       setFile(null)
-      // notify listeners (Sort) that new transactions are available
-      window.dispatchEvent(new Event('transactionsUploaded'))
     } catch (err) {
       setMessage('Upload failed')
     } finally {

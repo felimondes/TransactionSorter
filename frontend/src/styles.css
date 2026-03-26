@@ -76,6 +76,11 @@ body{font-family:Inter, Arial, Helvetica, sans-serif;background:#f6f6f6;color:#1
 /* loading overlay (matches class used in JSX) */
 .loading-overlay{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:linear-gradient(180deg,#ffffff,#f5f5f5);border:1px solid rgba(0,0,0,0.06);padding:10px 12px;border-radius:10px;color:#111;z-index:1100}
 
+/* amount colors */
+.transaction-amount{font-weight:700}
+.transaction-amount.positive{color:#1f8f4a}
+.transaction-amount.negative{color:#6b6b6b}
+
 @media (max-width:800px){.node{min-width:120px}}
 
 /* accessibility focus */
