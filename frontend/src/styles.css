@@ -86,4 +86,39 @@ body{font-family:Inter, Arial, Helvetica, sans-serif;background:#f6f6f6;color:#1
 /* accessibility focus */
 .node:focus{outline:2px solid rgba(0,0,0,0.06)}
 
+/* bucket panel list styling (compact, no horizontal scroll) */
+.bucket-panel-list{padding-right:14px; /* reserve space for narrow scrollbar so amounts don't get hidden */}
+.bucket-panel-list .panel-row{background:transparent;border-radius:8px;padding:6px 6px;cursor:grab}
+.bucket-panel-list .panel-row:active{cursor:grabbing}
+.bucket-panel-list .panel-row .transaction-amount{min-width:64px;text-align:right}
+.bucket-panel-list .panel-row .transaction-description{font-size:12px;color:#111}
+
+/* minimal floating scrollbar for bucket panel */
+.bucket-panel-list{scrollbar-width:thin;scrollbar-color: rgba(0,0,0,0.18) transparent}
+.bucket-panel-list::-webkit-scrollbar{width:8px}
+.bucket-panel-list::-webkit-scrollbar-track{background:transparent}
+.bucket-panel-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+.bucket-panel-list::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.24)}
+
+/* make panel rows visually compact and ensure content doesn't force horizontal scroll */
+.panel-row{overflow:hidden}
+.panel-row .transaction-description{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* slightly smaller date text in panel rows */
+.panel-row div div + div { font-size:12px; color:#666 }
+
+/* reduce default button prominence inside context menu */
+.context-menu button{font-size:13px}
+
+/* remove button inside bucket panel rows */
+.remove-btn{background:#ff6b6b;border:none;color:#fff;width:26px;height:26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.remove-btn:hover{background:#ff5252}
+
+/* zoom control corner (small) */
+.zoom-controls{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:14000}
+.zoom-controls button{background:linear-gradient(180deg,#ffffff,#fafafa);border:1px solid rgba(0,0,0,0.06);padding:8px;border-radius:8px;cursor:pointer}
+
+/* ensure content scales without adding extra scrollbars */
+.content{transform-origin:top left}
+
 /* end */
