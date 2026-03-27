@@ -23,11 +23,9 @@ public class TransactionController {
     }
 
     @PostMapping
-    public Transaction createTransaction(@RequestBody Transaction transaction) {
-        String transactionName = transaction.getDescription();
-        LocalDate transactionDate = transaction.getDate();
-        BigDecimal transactionAmount = transaction.getAmount();
-        return transactionService.createTransaction(transactionName, transactionDate, transactionAmount);
+    public Transaction createTransaction(@RequestBody TransactionCreationRequest request) {
+
+        return transactionService.createTransaction(request);
     }
 
     @GetMapping

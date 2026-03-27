@@ -5,19 +5,25 @@ import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.ErrorHandling.HardRuleException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreatedEvent;
+import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
 public class HardRuleService {
 
-    HardRuleRepository repository;
-    BucketService bucketService;
-    public  HardRuleService(HardRuleRepository hardRuleRepository, BucketService bucketService) {
+    private final HardRuleRepository repository;
+    private final BucketService bucketService;
+    private final TransactionService transactionService;
+
+    public  HardRuleService(HardRuleRepository hardRuleRepository, BucketService bucketService, TransactionService transactionService) {
         this.bucketService = bucketService;
         this.repository = hardRuleRepository;
+        this.transactionService = transactionService;
     }
 
     public void createHardRule(Long bucketId, String description) {
@@ -37,7 +43,11 @@ public class HardRuleService {
             return;
         }
         Bucket bucket = hardRule.get().getBucket();
-        bucketService.addTransaction(bucket.getId(), transaction.getId());
+
+        TransactionUpdateRequest request = new TransactionUpdateRequest();
+        request.setBucketId(bucket.getId());
+        transactionService.updateTransaction(transaction.getId(), request);
+
     }
 
     public void removeHardRule(String description) {

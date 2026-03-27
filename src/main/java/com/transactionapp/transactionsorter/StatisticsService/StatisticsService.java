@@ -5,6 +5,7 @@ import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.ErrorHandling.StatisticsException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import com.transactionapp.transactionsorter.TransactionService.TransactionRepository;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import org.springframework.stereotype.Service;
 
@@ -17,15 +18,14 @@ import java.util.stream.Collectors;
 @Service
 public class StatisticsService {
 
-    private final TransactionService transactionService;
+    private final TransactionRepository transactionRepository;
 
-    public StatisticsService(TransactionService transactionService) {
-        this.transactionService = transactionService;
+    public StatisticsService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
     }
 
     public Map<Long, BigDecimal> getAverageSpentPerMonthByCategory() {
-        List<BucketAverage> averages = transactionService.findAveragePerMonthByBucket();
-
+        List<BucketAverage> averages = transactionRepository.findAveragePerMonthByBucket();
         Map<Long, BigDecimal> result = averages.stream()
                 .filter(avg -> avg.getBucketId() != null
                         && avg.getBucketName() != null
@@ -34,7 +34,6 @@ public class StatisticsService {
                         BucketAverage::getBucketId,
                         avg -> avg.getAveragePerMonth().setScale(2, RoundingMode.HALF_UP)
                 ));
-
         if (result.isEmpty()) {
             throw new StatisticsException("Fill buckets with transactions to see statistics");
         }

@@ -2,8 +2,9 @@ package com.transactionapp.transactionsorter.BucketService;
 
 public class BucketUpdateRequest {
     private String tag;
-    private boolean removeTag;
     private String  name;
+    private boolean removeTag;
+
 
 
     public BucketUpdateRequest() {

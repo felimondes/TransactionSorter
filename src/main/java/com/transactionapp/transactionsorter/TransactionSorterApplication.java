@@ -2,7 +2,7 @@ package com.transactionapp.transactionsorter;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketRepository;
-import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBucketEvent;
+import com.transactionapp.transactionsorter.TransactionService.events.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.SuggestionService.SuggestionService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionRepository;

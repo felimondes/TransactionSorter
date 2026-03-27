@@ -33,6 +33,11 @@
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>net.objecthunter</groupId>
+            <artifactId>exp4j</artifactId>
+            <version>0.4.8</version>
+        </dependency>
 
 <!--       To remove JNA errors :) -->
         <dependency>

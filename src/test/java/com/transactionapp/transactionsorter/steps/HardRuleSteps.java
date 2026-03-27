@@ -4,7 +4,9 @@ import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.HardRuleService.HardRuleService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -48,12 +50,15 @@ public class HardRuleSteps {
 
     @And("a transaction with description {string}")
     public void aTransactionWithDescription(String arg0) {
-        transaction = transactionService.createTransaction(arg0);
+        transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @When("i add the transaction to the bucket {string}")
     public void iAddTheTransactionToTheBucket(String arg0) {
-        bucketService.addTransaction(bucket.getId(), transaction.getId());
+        TransactionUpdateRequest request = new TransactionUpdateRequest();
+        request.setBucketId(bucket.getId());
+        transactionService.updateTransaction(transaction.getId(), request);
+
     }
 
     @And("add a hard rule between the bucket and the transaction")
@@ -64,12 +69,12 @@ public class HardRuleSteps {
 
     @When("i load a transaction with description {string}")
     public void iLoadATransactionWithDescription(String arg0) {
-        transactionService.createTransaction(arg0);
+        transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @Then("it should immediately be added to the bucket  {string}")
     public void itShouldImmediatelyBeAddedTo(String arg0) {
-        List<Transaction> transactions = bucketService.getTransactionsInBucket(bucket.getId());
+        List<Transaction> transactions = transactionService.getTransactionsByBucket(bucket.getId());
         assertEquals(transactions.getFirst().getId(), transaction.getId());
     }
 
@@ -82,13 +87,13 @@ public class HardRuleSteps {
 
     @Then("it should not be added to the bucket  {string}")
     public void itShouldNotBeAddedToTheBucket(String arg0) {
-        List<Transaction> transactions = bucketService.getTransactionsInBucket(bucket.getId());
+        List<Transaction> transactions = transactionService.getTransactionsByBucket(bucket.getId());
         assertNotEquals(transactions.getFirst().getId(), transaction.getId());
     }
 
     @And("i again load a transaction with description {string}")
     public void iAgainLoadATransactionWithDescription(String arg0) {
-        transaction = transactionService.createTransaction(arg0);
+        transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @When("i try to remove hard rule for {string}")

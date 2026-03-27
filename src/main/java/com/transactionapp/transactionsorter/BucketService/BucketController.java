@@ -1,7 +1,4 @@
 package com.transactionapp.transactionsorter.BucketService;
-
-
-import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,29 +24,9 @@ public class BucketController {
     }
 
     @DeleteMapping("/{bucketId}")
-    public List<Transaction> deleteBucket(@PathVariable Long bucketId) {
-        return bucketService.deleteBucket(bucketId);
+    public void deleteBucket(@PathVariable Long bucketId) {
+        bucketService.deleteBucket(bucketId);
     }
-
-    @PostMapping("/{bucketId}/transactions/{transactionId}")
-    public Transaction addTransaction(
-            @PathVariable Long bucketId,
-            @PathVariable Long transactionId) {
-        return bucketService.addTransaction(bucketId, transactionId);
-    }
-
-    @DeleteMapping("/{bucketId}/transactions/{transactionId}")
-    public Transaction removeTransaction(
-            @PathVariable Long bucketId,
-            @PathVariable Long transactionId) {
-        return bucketService.removeTransaction(bucketId, transactionId);
-    }
-
-    @GetMapping("/{bucketId}/transactions")
-    public List<Transaction> getTransactionsInBucket(@PathVariable Long bucketId) {
-        return bucketService.getTransactionsInBucket(bucketId);
-    }
-
 
     @GetMapping("/{bucketId}")
     public Bucket getBucket(@PathVariable Long bucketId) {

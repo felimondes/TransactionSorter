@@ -1,7 +1,7 @@
-package com.transactionapp.transactionsorter.BucketService;
+package com.transactionapp.transactionsorter.TransactionService.events;
 
-import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.BucketService.Bucket;
+import com.transactionapp.transactionsorter.TransactionService.Transaction;
 
 public class TransactionRemovedFromBucketEvent {
     private final Transaction transaction;

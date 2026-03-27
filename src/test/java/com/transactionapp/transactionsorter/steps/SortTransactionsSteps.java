@@ -5,7 +5,9 @@ import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
@@ -45,7 +47,8 @@ public class SortTransactionsSteps {
 
     @Given("a transaction")
     public void aTransactionWithSomeInformation() {
-        Transaction transaction = transactionService.createTransaction("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00"));
+        Transaction transaction = transactionService.
+                createTransaction((new TransactionCreationRequest("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00"))));
         transactionId = transaction.getId();
     }
 
@@ -59,34 +62,35 @@ public class SortTransactionsSteps {
     @When("i add the transaction to the bucket")
     public void iAddTheBucketTransactionToTheBucket() {
         try {
-            bucketService.addTransaction(bucketId, transactionId);
+            TransactionUpdateRequest request = new TransactionUpdateRequest();
+            request.setBucketId(bucketId);
+            transactionService.updateTransaction(transactionId, request);
         } catch (TransactionNotFoundException e) {
             this.e = e;
         }
     }
 
-
     @Then("the transaction is in the bucket")
     public void theTransactionIsInTheBucket() {
-        Transaction transactionInBucket = bucketService.getTransactionsInBucket(bucketId).getFirst();
+        Transaction transactionInBucket = transactionService.getTransactionsByBucket(bucketId).getFirst();
         assertEquals(transactionId, transactionInBucket.getId());
     }
 
 
     @And("remove the transaction from the bucket")
     public void removeTheTransactionFromTheBucket() {
-        bucketService.removeTransaction(bucketId, transactionId);
-
+        TransactionUpdateRequest request = new TransactionUpdateRequest();
+        request.setRemoveBucket(true);
+        transactionService.updateTransaction(transactionId, request);
     }
 
     @Then("the transaction is not in the bucket")
     public void theTransactionIsNotInTheBucket() {
-        assertTrue(bucketService.getTransactionsInBucket(bucketId).isEmpty());
+        assertTrue(transactionService.getTransactionsByBucket(bucketId).isEmpty());
     }
 
     @And("delete the bucket")
     public void deleteTheBucket() {
-
         bucketService.deleteBucket(bucketId);
         boolean exists = bucketService.getAllBuckets()
                 .stream()
@@ -138,7 +142,7 @@ public class SortTransactionsSteps {
 
     @When("i create a transaction with description {string}, date {string} and amount {string}")
     public void iCreateATransactionWithDescriptionDateAndAmount(String arg0, String arg1, String arg2) {
-        Transaction transaction = transactionService.createTransaction(arg0, LocalDate.parse(arg1), new BigDecimal(arg2));
+        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, LocalDate.parse(arg1), new BigDecimal(arg2))));
         transactionId = transaction.getId();
     }
 

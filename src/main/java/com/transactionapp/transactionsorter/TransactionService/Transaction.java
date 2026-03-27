@@ -2,10 +2,11 @@ package com.transactionapp.transactionsorter.TransactionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Objects;
 
 @Entity
 public class Transaction {
@@ -15,85 +16,65 @@ public class Transaction {
     private Long id;
 
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     @JoinColumn(name = "bucket_id")
     private Bucket bucket;
-
 
     private String description;
     private LocalDate date;
     private BigDecimal amount;
-    private LocalDate creationDate;
+    private final LocalDate creationDate = LocalDate.now();
+
+    protected Transaction() {}
 
     public Transaction(String description, LocalDate date, BigDecimal amount) {
         this.description = description;
         this.date = date;
         this.amount = amount;
-        this.creationDate = LocalDate.now();
     }
 
     public Transaction(String description) {
-        this.description = description;
+        this(description, null, null);
     }
 
-    protected Transaction() {
-
-    }
-
-    @PostUpdate
-    public void postUpdate() {
-        System.out.println("Transaction with ID " + id + " updated");
-    }
-
-    @PostPersist
-    public void prePersist() {
-        System.out.println("Transaction with ID " + id + " persisted");
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Bucket getBucket() {
-        return bucket;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-    protected void setDescription(String description) {
-        this.description = description;
-    }
-    public void setBucket(Bucket bucket) {
+    // --- Domain behavior ---
+    public void assignToBucket(Bucket bucket) {
         this.bucket = bucket;
     }
-    protected void setDate(LocalDate date) {
-        this.date = date;
+
+    public void removeFromBucket() {
+        this.bucket = null;
     }
-    protected void setAmount(BigDecimal amount) {
-        this.amount = amount;
+
+    public void updateDescription(String description) {
+        if (description != null) this.description = description;
+    }
+
+    public void updateAmount(BigDecimal amount) {
+        if (amount != null) this.amount = amount;
+    }
+
+    public void updateDate(LocalDate date) {
+        if (date != null) this.date = date;
+    }
+
+    // --- Getters ---
+    public Long getId() { return id; }
+    public Bucket getBucket() { return bucket; }
+    public String getDescription() { return description; }
+    public LocalDate getDate() { return date; }
+    public BigDecimal getAmount() { return amount; }
+    public LocalDate getCreationDate() { return creationDate; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Transaction)) return false;
+        return id != null && id.equals(((Transaction) o).id);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Transaction that = (Transaction) obj;
-        return Objects.equals(that.id, this.id);
-    }
-
-    public LocalDate getCreationDate() {
-        return creationDate;
+    public int hashCode() {
+        return 31;
     }
 }

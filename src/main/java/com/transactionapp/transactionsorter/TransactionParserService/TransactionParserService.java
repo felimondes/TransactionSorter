@@ -2,6 +2,7 @@ package com.transactionapp.transactionsorter.TransactionParserService;
 
 
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionParserException;
+import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,8 +45,9 @@ public class TransactionParserService {
                         .replace(",", ".");
 
                 BigDecimal amount = new BigDecimal(rawAmount);
+    
 
-                transactionService.createTransaction(description, date, amount);
+                transactionService.createTransaction((new TransactionCreationRequest(description, date, amount)));
             }
 
         } catch (IOException e) {

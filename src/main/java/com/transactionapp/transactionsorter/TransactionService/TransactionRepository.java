@@ -14,7 +14,6 @@ import java.util.List;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-    List<Transaction> getTransactionByBucket(Bucket bucket);
     List<Transaction> findByBucketIsNull();
     List<Transaction> findByBucket(Bucket bucket);
 
@@ -24,4 +23,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     GROUP BY t.bucket.id, t.bucket.name
 """)
     List<BucketAverage> findAveragePerMonthByBucket();
+
+    void deleteById(Long id);
+
+    List<Transaction> getTransactionByBucket(Bucket bucket);
+
+    void deleteAllByBucket(Bucket bucket);
 }

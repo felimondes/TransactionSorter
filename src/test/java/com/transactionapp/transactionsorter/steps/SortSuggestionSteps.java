@@ -2,12 +2,14 @@ package com.transactionapp.transactionsorter.steps;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
-import com.transactionapp.transactionsorter.BucketService.TransactionAddedToBucketEvent;
+import com.transactionapp.transactionsorter.TransactionService.events.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.SuggestionService.SuggestionScore;
 import com.transactionapp.transactionsorter.SuggestionService.SuggestionService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -33,16 +35,17 @@ public class SortSuggestionSteps {
         this.suggestionService = transactionCategorizationService;
     }
 
-
     public Bucket sortTransactionsToABucket(String description, String bucketName) {
         Bucket bucket = bucketService.createBucket(bucketName);
         int numberOfTransactions = 5;
         for (int i = 0; i < numberOfTransactions; i++) {
             int randomSuffix = (int) (Math.random() * 1000);
             String randomASCII = String.valueOf((char) (Math.random() * 26 + 'a'));
-            String transactionName = description + " " +  randomSuffix + " " + randomASCII;
-            Transaction transaction = transactionService.createTransaction(transactionName);
-            bucketService.addTransaction(bucket.getId(), transaction.getId());
+            String transactionDescription = description + " " +  randomSuffix + " " + randomASCII;
+            Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(transactionDescription, null, null)));
+            TransactionUpdateRequest request = new TransactionUpdateRequest();
+            request.setBucketId(bucket.getId());
+            transactionService.updateTransaction(transaction.getId(), request);
         }
         return bucket;
     }
@@ -68,7 +71,7 @@ public class SortSuggestionSteps {
 
     @When("i ask for suggestions on the transaction containing {string} in the description")
     public void iAskForSuggestionsOnWhereToPutATransactionContainingInTheDescription(String arg0) {
-        Transaction transaction = transactionService.createTransaction("hello " + arg0 );
+        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest("hello " + arg0, null, null)));
         try {
             SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
@@ -80,7 +83,7 @@ public class SortSuggestionSteps {
 
     @When("i ask for suggestions on a completly new transaction")
     public void iAskForSuggestionsOnWhereToPutATransactionThatResemblesNoPreviousTransactions() {
-        Transaction transaction = transactionService.createTransaction("A" + Math.random() * 1000);
+        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest("A" + Math.random() * 1000, null, null)));
         try {
             SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
@@ -109,8 +112,8 @@ public class SortSuggestionSteps {
     public void itsFine() {
         bucketService.createBucket("Test bucket");
 
-        Transaction tx1 = transactionService.createTransaction("fotex purchase");
-        Transaction tx2 = transactionService.createTransaction("fotex purchase");
+        Transaction tx1 = transactionService.createTransaction((new TransactionCreationRequest("fotex purchase", null, null)));
+        Transaction tx2 = transactionService.createTransaction((new TransactionCreationRequest("fotex purchase", null, null)));
 
         try {
             Runnable task1 = () -> suggestionService.learn(new TransactionAddedToBucketEvent(tx1, bucket));

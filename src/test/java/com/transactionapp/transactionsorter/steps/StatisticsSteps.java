@@ -8,7 +8,9 @@ import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.StatisticsService.StatisticsService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
+import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.PendingException;
@@ -86,13 +88,13 @@ public class StatisticsSteps {
 
             String description = merchant + suffix;
 
-            Transaction transaction = transactionService.createTransaction(
-                    description,
-                    randomDate,
-                    amount
-            );
+            Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(description, randomDate, amount)));
 
-            bucketService.addTransaction(bucket.getId(), transaction.getId());
+
+            TransactionUpdateRequest request = new TransactionUpdateRequest();
+            request.setBucketId(bucket.getId());
+            transactionService.updateTransaction(transaction.getId(), request);
+
         }
     }
 
