@@ -49,4 +49,16 @@ public class BucketController {
     public List<Transaction> getTransactionsInBucket(@PathVariable Long bucketId) {
         return bucketService.getTransactionsInBucket(bucketId);
     }
+
+
+    @GetMapping("/{bucketId}")
+    public Bucket getBucket(@PathVariable Long bucketId) {
+        return bucketService.getBucket(bucketId);
+    }
+
+    @PostMapping("/{bucketId}")
+    public Bucket updateBucket(@PathVariable Long bucketId, @RequestBody BucketUpdateRequest request) {
+        return bucketService.updateBucket(bucketId, request);
+    }
+
 }

@@ -2,10 +2,12 @@ package com.transactionapp.transactionsorter.steps;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
+import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import io.cucumber.java.After;
+import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -143,5 +146,31 @@ public class SortTransactionsSteps {
     public void aDateOfCreationAttributeIsAddedToIt() {
         Transaction transaction = transactionService.getTransactionById(transactionId);
         assertEquals(LocalDate.now(), transaction.getCreationDate());
+    }
+
+    @When("i add the tag {string} to the bucket")
+    public void iAddTheTagToTheBucket(String tag) {
+        BucketUpdateRequest request = new BucketUpdateRequest();
+        request.setTag(tag);
+        bucketService.updateBucket(bucketId, request);
+    }
+
+    @Then("the tag {string} is added to the bucket")
+    public void theTagIsAddedToTheBucket(String arg0) {
+        String tag = bucketService.getBucket(bucketId).getTag();
+        assertEquals(arg0, tag);
+    }
+
+    @When("i remove the tag {string} from the bucket")
+    public void iRemoveTheTagFromTheBucket(String arg0) {
+        BucketUpdateRequest request = new BucketUpdateRequest();
+        request.markRemoveTag();
+        bucketService.updateBucket(bucketId, request);
+    }
+
+    @Then("the tag {string} is not in the bucket")
+    public void theTagIsNotInTheBucket(String arg0) {
+        String tag = bucketService.getBucket(bucketId).getTag();
+        assertNull(tag);
     }
 }

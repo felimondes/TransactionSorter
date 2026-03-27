@@ -4,6 +4,18 @@ Feature: As a user i want to sort my transactions in buckets
     When i create a transaction with description "Netto 123", date "2024-01-01" and amount "100"
     Then a date of creation attribute is added to it
 
+   Scenario: Add tag to bucket
+    Given a bucket with a name
+    When i add the tag "Shared economy" to the bucket
+    Then the tag "Shared economy" is added to the bucket
+
+  Scenario: Remove tag
+    Given a bucket with a name
+    When i add the tag "Shared economy" to the bucket
+    Then the tag "Shared economy" is added to the bucket
+    When i remove the tag "Shared economy" from the bucket
+    Then the tag "Shared economy" is not in the bucket
+
   Scenario: See unsorted transactions
     Given a transaction
     Then i see the transaction in unsorted transactions

@@ -21,13 +21,15 @@ public class Bucket {
     @OneToMany(mappedBy = "bucket")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Transaction> transactions = new ArrayList<>();
-    private String name;
 
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
     private List<Suggestion> tokenStats = new ArrayList<>();
 
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HardRule> hardRules;
+
+    private String name;
+    private String tag;
 
     public Bucket(String name) {
         this.name = name;
@@ -71,5 +73,18 @@ public class Bucket {
         if (obj == null || getClass() != obj.getClass()) return false;
         Bucket that = (Bucket) obj;
         return Objects.equals(that.id, this.id);
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

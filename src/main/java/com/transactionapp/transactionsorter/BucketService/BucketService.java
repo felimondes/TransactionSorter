@@ -16,12 +16,14 @@ public class BucketService {
     private final TransactionService transactionService;
     private final ApplicationEventPublisher eventPublisher;
 
+
     public BucketService(BucketRepository bucketRepository,
                          TransactionService transactionService,
                          ApplicationEventPublisher eventPublisher) {
         this.bucketRepository = bucketRepository;
         this.transactionService = transactionService;
         this.eventPublisher = eventPublisher;
+
     }
 
     public Bucket createBucket(String name) {
@@ -88,9 +90,7 @@ public class BucketService {
     }
 
     private Bucket getManagedBucket(Long bucketId) {
-        return bucketRepository.findById(bucketId)
-                .orElseThrow(() -> new BucketNotFoundException(
-                        "Bucket not found with id: " + bucketId));
+        return getBucketOrThrow(bucketId);
     }
 
     @Transactional
@@ -102,6 +102,33 @@ public class BucketService {
     }
 
     public Bucket getBucket(Long bucketId) {
-        return bucketRepository.findById(bucketId).orElseThrow(() -> new BucketNotFoundException("Bucket not found with id: " + bucketId));
+        return getBucketOrThrow(bucketId);
+    }
+
+    public Bucket updateBucket(Long bucketId, BucketUpdateRequest request) {
+        Bucket bucket = getBucketOrThrow(bucketId);
+        updateName(bucket, bucket.getName());
+        updateTag(bucket, request);
+        return bucketRepository.save(bucket);
+    }
+
+    private void updateTag(Bucket bucket, BucketUpdateRequest request) {
+        if (request.isRemoveTag()) {
+            bucket.setTag(null);
+        } else if (request.getTag() != null) {
+            bucket.setTag(request.getTag());
+        }
+    }
+
+    private void updateName(Bucket bucket, String name) {
+        if (name != null) {
+            bucket.setName(name);
+        }
+    }
+
+    private Bucket getBucketOrThrow(Long bucketId) {
+        return bucketRepository.findById(bucketId)
+                .orElseThrow(() -> new BucketNotFoundException(
+                        "Bucket not found with id: " + bucketId));
     }
 }
