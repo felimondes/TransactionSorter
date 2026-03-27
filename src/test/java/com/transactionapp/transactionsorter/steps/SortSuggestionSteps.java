@@ -69,7 +69,6 @@ public class SortSuggestionSteps {
     @When("i ask for suggestions on the transaction containing {string} in the description")
     public void iAskForSuggestionsOnWhereToPutATransactionContainingInTheDescription(String arg0) {
         Transaction transaction = transactionService.createTransaction("hello " + arg0 );
-
         try {
             SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();

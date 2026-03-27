@@ -2,7 +2,6 @@ package com.transactionapp.transactionsorter.TransactionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,11 +22,13 @@ public class Transaction {
     private String description;
     private LocalDate date;
     private BigDecimal amount;
+    private LocalDate creationDate;
 
     public Transaction(String description, LocalDate date, BigDecimal amount) {
         this.description = description;
         this.date = date;
         this.amount = amount;
+        this.creationDate = LocalDate.now();
     }
 
     public Transaction(String description) {
@@ -90,5 +91,9 @@ public class Transaction {
         if (obj == null || getClass() != obj.getClass()) return false;
         Transaction that = (Transaction) obj;
         return Objects.equals(that.id, this.id);
+    }
+
+    public LocalDate getCreationDate() {
+        return creationDate;
     }
 }

@@ -1,4 +1,6 @@
 Feature: As a user i want suggestion on where to put unsorted transactions based on my previous sortings
+
+
     Scenario: Suggestion based on nothing
         Given that i previously sorted multiple transactions with the description containing the word "Netto" in the bucket labeled "Groceries"
         When i ask for suggestions on a completly new transaction

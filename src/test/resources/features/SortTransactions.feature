@@ -1,5 +1,9 @@
 Feature: As a user i want to sort my transactions in buckets
 
+  Scenario: Date of creation attribute
+    When i create a transaction with description "Netto 123", date "2024-01-01" and amount "100"
+    Then a date of creation attribute is added to it
+
   Scenario: See unsorted transactions
     Given a transaction
     Then i see the transaction in unsorted transactions

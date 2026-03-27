@@ -6,8 +6,6 @@ import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundExc
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import io.cucumber.java.After;
-import io.cucumber.java.Before;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -132,5 +130,18 @@ public class SortTransactionsSteps {
         boolean found = unsortedTransactions.stream()
                 .anyMatch(t -> t.getId().equals(transactionId));
         assertFalse(found);
+    }
+
+
+    @When("i create a transaction with description {string}, date {string} and amount {string}")
+    public void iCreateATransactionWithDescriptionDateAndAmount(String arg0, String arg1, String arg2) {
+        Transaction transaction = transactionService.createTransaction(arg0, LocalDate.parse(arg1), new BigDecimal(arg2));
+        transactionId = transaction.getId();
+    }
+
+    @Then("a date of creation attribute is added to it")
+    public void aDateOfCreationAttributeIsAddedToIt() {
+        Transaction transaction = transactionService.getTransactionById(transactionId);
+        assertEquals(LocalDate.now(), transaction.getCreationDate());
     }
 }
