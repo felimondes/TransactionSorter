@@ -6,7 +6,6 @@ import com.transactionapp.transactionsorter.HardRuleService.HardRuleService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
-import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -33,10 +32,10 @@ public class HardRuleSteps {
 
     @After
     public void cleanup(){
-        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
-        bucketService.deleteAllBuckets();
+        transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
+        bucketService.deleteAll();
         try {
-            hardRuleService.removeHardRule(descriptionToBeRemovedFor);
+            hardRuleService.remove(descriptionToBeRemovedFor);
 
         } catch (Exception e) {
             // Ignore if the rule was already removed
@@ -45,61 +44,58 @@ public class HardRuleSteps {
 
     @Given("a bucket with name {string}")
     public void aBucketWithName(String arg0) {
-        bucket = bucketService.createBucket(arg0);
+        bucket = bucketService.create(arg0);
     }
 
     @And("a transaction with description {string}")
     public void aTransactionWithDescription(String arg0) {
-        transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
+        transaction = transactionService.create((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @When("i add the transaction to the bucket {string}")
     public void iAddTheTransactionToTheBucket(String arg0) {
-        TransactionUpdateRequest request = new TransactionUpdateRequest();
-        request.setBucketId(bucket.getId());
-        transactionService.updateTransaction(transaction.getId(), request);
-
+        transactionService.assignBucket(transaction.getId(), bucket.getId());
     }
 
     @And("add a hard rule between the bucket and the transaction")
     public void addAHardRuleBetweenTheBucketAndTheTransaction() {
-        hardRuleService.createHardRule(bucket.getId(), transaction.getDescription());
+        hardRuleService.create(bucket.getId(), transaction.getDescription());
         descriptionToBeRemovedFor = transaction.getDescription();
     }
 
     @When("i load a transaction with description {string}")
     public void iLoadATransactionWithDescription(String arg0) {
-        transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
+        transactionService.create((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @Then("it should immediately be added to the bucket  {string}")
     public void itShouldImmediatelyBeAddedTo(String arg0) {
-        List<Transaction> transactions = transactionService.getTransactionsByBucket(bucket.getId());
+        List<Transaction> transactions = transactionService.getByBucket(bucket.getId());
         assertEquals(transactions.getFirst().getId(), transaction.getId());
     }
 
 
     @When("i remove the hard rule between the bucket {string} and the description {string}")
     public void iRemoveTheHardRuleBetweenTheBucketAndTheDescription(String arg0, String arg1) {
-        hardRuleService.removeHardRule(arg1);
+        hardRuleService.remove(arg1);
         assertEquals(arg0, bucket.getName());
     }
 
     @Then("it should not be added to the bucket  {string}")
     public void itShouldNotBeAddedToTheBucket(String arg0) {
-        List<Transaction> transactions = transactionService.getTransactionsByBucket(bucket.getId());
+        List<Transaction> transactions = transactionService.getByBucket(bucket.getId());
         assertNotEquals(transactions.getFirst().getId(), transaction.getId());
     }
 
     @And("i again load a transaction with description {string}")
     public void iAgainLoadATransactionWithDescription(String arg0) {
-        transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, null, null)));
+        transaction = transactionService.create((new TransactionCreationRequest(arg0, null, null)));
     }
 
     @When("i try to remove hard rule for {string}")
     public void iTryToRemoveHardRuleFor(String arg0) {
         try {
-            hardRuleService.removeHardRule(arg0);
+            hardRuleService.remove(arg0);
 
         } catch (Exception e) {
             this.e = e;

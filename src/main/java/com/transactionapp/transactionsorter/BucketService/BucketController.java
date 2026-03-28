@@ -7,35 +7,39 @@ import java.util.List;
 @RequestMapping("/buckets")
 public class BucketController {
 
-    private final BucketService bucketService;
+    private final BucketService service;
 
     public BucketController(BucketService bucketService) {
-        this.bucketService = bucketService;
+        this.service = bucketService;
     }
 
+
     @PostMapping
-    public Bucket createBucket(@RequestParam String name) {
-        return bucketService.createBucket(name);
+    public Bucket create(@RequestParam String name) {
+        return service.create(name);
     }
 
     @GetMapping
-    public List<Bucket> getAllBuckets() {
-        return bucketService.getAllBuckets();
+    public List<Bucket> getAll() {
+        return service.getAll();
     }
 
     @DeleteMapping("/{bucketId}")
-    public void deleteBucket(@PathVariable Long bucketId) {
-        bucketService.deleteBucket(bucketId);
+    public void delete(@PathVariable Long bucketId) {
+        service.delete(bucketId);
     }
 
     @GetMapping("/{bucketId}")
-    public Bucket getBucket(@PathVariable Long bucketId) {
-        return bucketService.getBucket(bucketId);
+    public Bucket get(@PathVariable Long bucketId) {
+        return service.get(bucketId);
     }
 
     @PostMapping("/{bucketId}")
-    public Bucket updateBucket(@PathVariable Long bucketId, @RequestBody BucketUpdateRequest request) {
-        return bucketService.updateBucket(bucketId, request);
+    public Bucket updateData(@PathVariable Long bucketId, @RequestBody BucketUpdateRequest request) {
+        return service.updateData(bucketId, request);
     }
-
+    @DeleteMapping("/all")
+    public void deleteAll() {
+        service.deleteAll();
+    }
 }

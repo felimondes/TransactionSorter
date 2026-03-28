@@ -9,28 +9,6 @@ public class TransactionUpdateRequest {
     private LocalDate date;
     private BigDecimal amount;
 
-    private Long bucketId;
-    private boolean isRemoveBucket;
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private final TransactionUpdateRequest instance = new TransactionUpdateRequest();
-
-        public Builder bucketId(Long bucketId) {
-            instance.bucketId = bucketId; return this;
-        }
-        public Builder description(String description) { instance.description = description; return this; }
-        public Builder amount(BigDecimal amount) { instance.amount = amount; return this; }
-        public Builder date(LocalDate date) { instance.date = date; return this; }
-        public Builder removeBucket(boolean removeBucket) { instance.isRemoveBucket = removeBucket; return this; }
-
-        public TransactionUpdateRequest build() { return instance; }
-    }
-
-
     // getters + setters
     public String getDescription() {
         return description;
@@ -56,19 +34,4 @@ public class TransactionUpdateRequest {
         this.amount = amount;
     }
 
-    public Long getBucketId() {
-        return bucketId;
-    }
-
-    public void setBucketId(Long bucketId) {
-        this.bucketId = bucketId;
-    }
-
-    public boolean isRemoveBucket() {
-        return isRemoveBucket;
-    }
-
-    public void setRemoveBucket(boolean removeBucket) {
-        isRemoveBucket = removeBucket;
-    }
 }

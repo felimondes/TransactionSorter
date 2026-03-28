@@ -9,7 +9,6 @@ import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 
-import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -36,25 +35,23 @@ public class SortSuggestionSteps {
     }
 
     public Bucket sortTransactionsToABucket(String description, String bucketName) {
-        Bucket bucket = bucketService.createBucket(bucketName);
+        Bucket bucket = bucketService.create(bucketName);
         int numberOfTransactions = 5;
         for (int i = 0; i < numberOfTransactions; i++) {
             int randomSuffix = (int) (Math.random() * 1000);
             String randomASCII = String.valueOf((char) (Math.random() * 26 + 'a'));
             String transactionDescription = description + " " +  randomSuffix + " " + randomASCII;
-            Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(transactionDescription, null, null)));
-            TransactionUpdateRequest request = new TransactionUpdateRequest();
-            request.setBucketId(bucket.getId());
-            transactionService.updateTransaction(transaction.getId(), request);
+            Transaction transaction = transactionService.create((new TransactionCreationRequest(transactionDescription, null, null)));
+            transactionService.assignBucket(transaction.getId(), bucket.getId());
         }
         return bucket;
     }
 
     @After
     public void cleanup() {
-        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
-        bucketService.deleteAllBuckets();
-        suggestionService.deleteAllSuggestions();
+        transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
+        bucketService.deleteAll();
+        suggestionService.deleteAll();
 
     }
 
@@ -71,7 +68,7 @@ public class SortSuggestionSteps {
 
     @When("i ask for suggestions on the transaction containing {string} in the description")
     public void iAskForSuggestionsOnWhereToPutATransactionContainingInTheDescription(String arg0) {
-        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest("hello " + arg0, null, null)));
+        Transaction transaction = transactionService.create((new TransactionCreationRequest("hello " + arg0, null, null)));
         try {
             SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
@@ -83,7 +80,7 @@ public class SortSuggestionSteps {
 
     @When("i ask for suggestions on a completly new transaction")
     public void iAskForSuggestionsOnWhereToPutATransactionThatResemblesNoPreviousTransactions() {
-        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest("A" + Math.random() * 1000, null, null)));
+        Transaction transaction = transactionService.create((new TransactionCreationRequest("A" + Math.random() * 1000, null, null)));
         try {
             SuggestionScore categoryScore = suggestionService.categorize(transaction.getDescription());
             this.category = categoryScore.category();
@@ -95,7 +92,7 @@ public class SortSuggestionSteps {
 
     @And("i delete the bucket labeled {string}")
     public void iDeleteTheBucketLabeled(String arg0) {
-        bucketService.deleteBucket(bucket.getId());
+        bucketService.delete(bucket.getId());
     }
 
     @And("also sorted multiple transactions with the description containing the word {string} in a different bucket labeled {string}")
@@ -105,15 +102,15 @@ public class SortSuggestionSteps {
 
     @When("i delete the first bucket")
     public void iDeleteTheFirstBucket() {
-        bucketService.deleteBucket(bucket.getId());
+        bucketService.delete(bucket.getId());
     }
 
     @Then("its fine")
     public void itsFine() {
-        bucketService.createBucket("Test bucket");
+        bucketService.create("Test bucket");
 
-        Transaction tx1 = transactionService.createTransaction((new TransactionCreationRequest("fotex purchase", null, null)));
-        Transaction tx2 = transactionService.createTransaction((new TransactionCreationRequest("fotex purchase", null, null)));
+        Transaction tx1 = transactionService.create((new TransactionCreationRequest("fotex purchase", null, null)));
+        Transaction tx2 = transactionService.create((new TransactionCreationRequest("fotex purchase", null, null)));
 
         try {
             Runnable task1 = () -> suggestionService.learn(new TransactionAddedToBucketEvent(tx1, bucket));

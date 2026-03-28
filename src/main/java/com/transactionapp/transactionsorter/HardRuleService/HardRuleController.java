@@ -7,24 +7,24 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/hard-rules")
 public class HardRuleController {
 
-    private final HardRuleService hardRuleService;
+    private final HardRuleService service;
 
     public HardRuleController(HardRuleService hardRuleService) {
-        this.hardRuleService = hardRuleService;
+        this.service = hardRuleService;
     }
 
     // Create a new hard rule
     @PostMapping
-    public ResponseEntity<String> createHardRule(@RequestParam Long bucketId,
-                                                 @RequestParam String description) {
-        hardRuleService.createHardRule(bucketId, description);
+    public ResponseEntity<String> create(@RequestParam Long bucketId,
+                                         @RequestParam String description) {
+        service.create(bucketId, description);
         return ResponseEntity.ok("Hard rule created successfully");
     }
 
     // Remove an existing hard rule by description
     @DeleteMapping
     public ResponseEntity<String> removeHardRule(@RequestParam String description) {
-        hardRuleService.removeHardRule(description);
+        service.remove(description);
         return ResponseEntity.ok("Hard rule removed successfully");
     }
 }

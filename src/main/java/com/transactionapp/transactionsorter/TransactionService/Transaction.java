@@ -60,7 +60,6 @@ public class Transaction {
 
     // --- Getters ---
     public Long getId() { return id; }
-    public Bucket getBucket() { return bucket; }
     public String getDescription() { return description; }
     public LocalDate getDate() { return date; }
     public BigDecimal getAmount() { return amount; }

@@ -1,6 +1,5 @@
-package com.transactionapp.transactionsorter.BucketService;
-
-import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+package com.transactionapp.transactionsorter.BucketService.events;
+import com.transactionapp.transactionsorter.BucketService.Bucket;
 import org.springframework.context.ApplicationEvent;
 
 public class BucketDeletedEvent extends ApplicationEvent {

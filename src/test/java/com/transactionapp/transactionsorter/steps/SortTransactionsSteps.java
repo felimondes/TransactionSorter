@@ -3,13 +3,10 @@ package com.transactionapp.transactionsorter.steps;
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
-import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
-import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -19,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,8 +31,8 @@ public class SortTransactionsSteps {
 
     @After
     public void cleanup() {
-        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
-        bucketService.deleteAllBuckets();
+        transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
+        bucketService.deleteAll();
     }
 
     public SortTransactionsSteps(BucketService bucketService, TransactionService transactionService) {
@@ -48,13 +44,13 @@ public class SortTransactionsSteps {
     @Given("a transaction")
     public void aTransactionWithSomeInformation() {
         Transaction transaction = transactionService.
-                createTransaction((new TransactionCreationRequest("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00"))));
+                create((new TransactionCreationRequest("Netto", LocalDate.parse("1999-01-01"), new BigDecimal("100.00"))));
         transactionId = transaction.getId();
     }
 
     @And("a bucket with a name")
     public void aBucketWithAName() {
-        Bucket bucket = bucketService.createBucket("Netto");
+        Bucket bucket = bucketService.create("Netto");
         bucketId = bucket.getId();
     }
 
@@ -62,37 +58,33 @@ public class SortTransactionsSteps {
     @When("i add the transaction to the bucket")
     public void iAddTheBucketTransactionToTheBucket() {
         try {
-            TransactionUpdateRequest request = new TransactionUpdateRequest();
-            request.setBucketId(bucketId);
-            transactionService.updateTransaction(transactionId, request);
-        } catch (TransactionNotFoundException e) {
+            transactionService.assignBucket(transactionId, bucketId);
+        } catch (Exception e) {
             this.e = e;
         }
     }
 
     @Then("the transaction is in the bucket")
     public void theTransactionIsInTheBucket() {
-        Transaction transactionInBucket = transactionService.getTransactionsByBucket(bucketId).getFirst();
+        Transaction transactionInBucket = transactionService.getByBucket(bucketId).getFirst();
         assertEquals(transactionId, transactionInBucket.getId());
     }
 
 
     @And("remove the transaction from the bucket")
-    public void removeTheTransactionFromTheBucket() {
-        TransactionUpdateRequest request = new TransactionUpdateRequest();
-        request.setRemoveBucket(true);
-        transactionService.updateTransaction(transactionId, request);
+    public void removeTheTransactionFromTheBucket() {;
+        transactionService.removeBucket(transactionId, bucketId);
     }
 
     @Then("the transaction is not in the bucket")
     public void theTransactionIsNotInTheBucket() {
-        assertTrue(transactionService.getTransactionsByBucket(bucketId).isEmpty());
+        assertTrue(transactionService.getByBucket(bucketId).isEmpty());
     }
 
     @And("delete the bucket")
     public void deleteTheBucket() {
-        bucketService.deleteBucket(bucketId);
-        boolean exists = bucketService.getAllBuckets()
+        bucketService.delete(bucketId);
+        boolean exists = bucketService.getAll()
                 .stream()
                 .anyMatch(b -> b.getId().equals(bucketId));
         assertFalse(exists);
@@ -100,8 +92,15 @@ public class SortTransactionsSteps {
 
     @Then("the transaction is not in any buckets")
     public void theTransactionIsNotAssociatedWithAnyBuckets() {
-        Transaction foundTransaction = transactionService.getTransactionById(transactionId);
-        assertNull(foundTransaction.getBucket());
+        Transaction foundTransaction = transactionService.getById(transactionId);
+        List<Transaction> transactions = transactionService.getUnsorted();
+        for (Transaction transaction : transactions) {
+            if (transaction.getId().equals(foundTransaction.getId())) {
+                assertTrue(true);
+                return;
+            }
+        }
+        fail();
     }
 
 
@@ -112,14 +111,14 @@ public class SortTransactionsSteps {
 
     @Then("i get an error saying \"not found\"")
     public void iGetAnErrorThatTheTransactionDoesNotExist() {
-        assertTrue(e instanceof TransactionNotFoundException);
+        assertTrue(e.getMessage().contains("not found"));
     }
 
 
 
     @Then("i see the transaction in unsorted transactions")
     public void iSeeTheTransaction() {
-        List<Transaction> unsortedTransactions = transactionService.getUnsortedTransactions();
+        List<Transaction> unsortedTransactions = transactionService.getUnsorted();
 
         boolean found = unsortedTransactions.stream()
                 .anyMatch(t -> t.getId().equals(transactionId));
@@ -128,12 +127,12 @@ public class SortTransactionsSteps {
 
     @When("i delete the transaction")
     public void iDeleteTheTransaction() {
-        transactionService.deleteTransaction(transactionId);
+        transactionService.delete(transactionId);
     }
 
     @Then("i do not see the transaction in my unsorted transactions")
     public void iDoNotSeeTheTransactionInMyUnsortedTransactions() {
-        List<Transaction> unsortedTransactions = transactionService.getUnsortedTransactions();
+        List<Transaction> unsortedTransactions = transactionService.getUnsorted();
         boolean found = unsortedTransactions.stream()
                 .anyMatch(t -> t.getId().equals(transactionId));
         assertFalse(found);
@@ -142,13 +141,13 @@ public class SortTransactionsSteps {
 
     @When("i create a transaction with description {string}, date {string} and amount {string}")
     public void iCreateATransactionWithDescriptionDateAndAmount(String arg0, String arg1, String arg2) {
-        Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(arg0, LocalDate.parse(arg1), new BigDecimal(arg2))));
+        Transaction transaction = transactionService.create((new TransactionCreationRequest(arg0, LocalDate.parse(arg1), new BigDecimal(arg2))));
         transactionId = transaction.getId();
     }
 
     @Then("a date of creation attribute is added to it")
     public void aDateOfCreationAttributeIsAddedToIt() {
-        Transaction transaction = transactionService.getTransactionById(transactionId);
+        Transaction transaction = transactionService.getById(transactionId);
         assertEquals(LocalDate.now(), transaction.getCreationDate());
     }
 
@@ -156,12 +155,12 @@ public class SortTransactionsSteps {
     public void iAddTheTagToTheBucket(String tag) {
         BucketUpdateRequest request = new BucketUpdateRequest();
         request.setTag(tag);
-        bucketService.updateBucket(bucketId, request);
+        bucketService.updateData(bucketId, request);
     }
 
     @Then("the tag {string} is added to the bucket")
     public void theTagIsAddedToTheBucket(String arg0) {
-        String tag = bucketService.getBucket(bucketId).getTag();
+        String tag = bucketService.get(bucketId).getTag();
         assertEquals(arg0, tag);
     }
 
@@ -169,12 +168,12 @@ public class SortTransactionsSteps {
     public void iRemoveTheTagFromTheBucket(String arg0) {
         BucketUpdateRequest request = new BucketUpdateRequest();
         request.markRemoveTag();
-        bucketService.updateBucket(bucketId, request);
+        bucketService.updateData(bucketId, request);
     }
 
     @Then("the tag {string} is not in the bucket")
     public void theTagIsNotInTheBucket(String arg0) {
-        String tag = bucketService.getBucket(bucketId).getTag();
+        String tag = bucketService.get(bucketId).getTag();
         assertNull(tag);
     }
 }

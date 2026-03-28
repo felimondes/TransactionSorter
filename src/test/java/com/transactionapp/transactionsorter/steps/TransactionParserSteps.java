@@ -28,14 +28,14 @@ public class TransactionParserSteps {
 
     @After
     public void cleanup() {
-        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
+        transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
     }
 
     MockMultipartFile file;
     int sizeBefore;
     @Given("a csv with transactions")
     public void aCsvWithTransactions() throws IOException {
-        sizeBefore = transactionService.getAllTransactions().size();
+        sizeBefore = transactionService.getAll().size();
 
         InputStream is = getClass()
                 .getClassLoader()
@@ -51,13 +51,13 @@ public class TransactionParserSteps {
 
     @When("i import the transactions")
     public void iImportTheTransactions() {
-        transactionParserService.uploadTransactions(file, 3);
+        transactionParserService.upload(file, 3);
 
     }
 
     @Then("i see the transactions in my unsorted transactions")
     public void iSeeTheTransactionsInMyUnsortedTransactions() {
-        List<Transaction> sizeAfter = transactionService.getAllTransactions();
+        List<Transaction> sizeAfter = transactionService.getAll();
         assertEquals(sizeBefore + 12, sizeAfter.size());
 
     }

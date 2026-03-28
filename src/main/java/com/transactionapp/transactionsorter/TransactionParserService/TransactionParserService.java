@@ -23,7 +23,7 @@ public class TransactionParserService {
         this.transactionService = transactionService;
     }
 
-    public void uploadTransactions(MultipartFile file, int month) {
+    public void upload(MultipartFile file, int month) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(file.getInputStream()))) {
@@ -47,7 +47,7 @@ public class TransactionParserService {
                 BigDecimal amount = new BigDecimal(rawAmount);
     
 
-                transactionService.createTransaction((new TransactionCreationRequest(description, date, amount)));
+                transactionService.create((new TransactionCreationRequest(description, date, amount)));
             }
 
         } catch (IOException e) {

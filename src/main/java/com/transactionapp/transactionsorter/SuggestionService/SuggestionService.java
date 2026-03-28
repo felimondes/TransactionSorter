@@ -57,10 +57,6 @@ public class SuggestionService {
         }
         return best;
     }
-
-
-
-
     private String normalize(String input) {
         return input.toLowerCase()
                 .replaceAll("\\d+", "")
@@ -114,6 +110,11 @@ public class SuggestionService {
     }
 
 
+    public void deleteAll() {
+        repository.deleteAll();
+    }
+
+    //TODO add functionality
     public void cleanupOldTokens() {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
 
@@ -124,9 +125,5 @@ public class SuggestionService {
         repository.deleteAll(oldTokens);
 
         System.out.println("Cleaned up " + oldTokens.size() + " rare tokens.");
-    }
-
-    public void deleteAllSuggestions() {
-        repository.deleteAll();
     }
 }

@@ -17,7 +17,7 @@ class TransactionParserController {
     @PostMapping("/upload/{month}")
     public ResponseEntity<?> uploadTransactions( @PathVariable int month,
             @RequestParam("file") MultipartFile file) {
-            parserService.uploadTransactions(file, month);
+            parserService.upload(file, month);
             return ResponseEntity.ok("Transactions imported successfully");
     }
 }

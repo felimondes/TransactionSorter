@@ -1,10 +1,9 @@
 package com.transactionapp.transactionsorter.TransactionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
-import com.transactionapp.transactionsorter.BucketService.BucketDeletedEvent;
+import com.transactionapp.transactionsorter.BucketService.events.BucketDeletedEvent;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.ErrorHandling.TransactionNotFoundException;
-import com.transactionapp.transactionsorter.StatisticsService.BucketAverage;
 import com.transactionapp.transactionsorter.TransactionService.events.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.TransactionService.events.TransactionRemovedFromBucketEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,7 +27,7 @@ public class TransactionService {
         this.bucketService = bucketService;
     }
 
-    public Transaction createTransaction(TransactionCreationRequest r) {
+    public Transaction create(TransactionCreationRequest r) {
         Transaction transaction = new Transaction(r.description(), r.date(), r.amount());
         transactionRepository.save(transaction);
         eventPublisher.publishEvent(new TransactionCreatedEvent(transaction));
@@ -36,56 +35,56 @@ public class TransactionService {
     }
 
     // --- Retrieve ---
-    public Transaction getTransactionById(Long id) {
+    public Transaction getById(Long id) {
         return transactionRepository.findById(id)
                 .orElseThrow(() -> new TransactionNotFoundException("Transaction not found: " + id));
     }
 
-    public List<Transaction> getAllTransactions() {
+    public List<Transaction> getAll() {
         return transactionRepository.findAll();
     }
 
-    public List<Transaction> getUnsortedTransactions() {
+    public List<Transaction> getUnsorted() {
         return transactionRepository.findByBucketIsNull();
     }
 
-    public List<Transaction> getTransactionsByBucket(Long bucketId) {
-        Bucket bucket = bucketService.getBucket(bucketId);
+    public List<Transaction> getByBucket(Long bucketId) {
+        Bucket bucket = bucketService.get(bucketId);
         return transactionRepository.findByBucket(bucket);
+    }
+
+    // --- Delete ---
+    public void delete(Long transactionId) {
+        Transaction tx = getById(transactionId);
+        transactionRepository.delete(tx);
     }
 
     // --- Update ---
     @Transactional
-    public Transaction updateTransaction(Long transactionId, TransactionUpdateRequest request) {
-        Transaction tx = getTransactionById(transactionId);
-
+    public Transaction updateData(Long transactionId, TransactionUpdateRequest request) {
+        Transaction tx = getById(transactionId);
         tx.updateDescription(request.getDescription());
         tx.updateAmount(request.getAmount());
         tx.updateDate(request.getDate());
-        handleBucketAssignment(tx, request);
-
         return transactionRepository.save(tx);
     }
 
-    private void handleBucketAssignment(Transaction tx, TransactionUpdateRequest request) {
-        if (request.isRemoveBucket()) {
-            removeTransactionFromBucket(tx);
-        } else if (request.getBucketId() != null) {
-            Bucket bucket = bucketService.getBucket(request.getBucketId());
-            addTransactionToBucket(tx, bucket);
-        }
+    public Transaction assignBucket(Long transactionId, Long bucketId) {
+        Bucket bucket = bucketService.get(bucketId);
+        Transaction transaction = getById(transactionId);
+        transaction.assignToBucket(bucket);
+        transactionRepository.save(transaction);
+        eventPublisher.publishEvent(new TransactionAddedToBucketEvent(transaction, bucket));
+        return transaction;
     }
 
-    private void addTransactionToBucket(Transaction tx, Bucket bucket) {
-            tx.assignToBucket(bucket);
-            eventPublisher.publishEvent(new TransactionAddedToBucketEvent(tx, bucket));
-    }
-    private void removeTransactionFromBucket(Transaction tx) {
-        Bucket oldBucket = tx.getBucket();
-        tx.removeFromBucket();
-        if (oldBucket != null) {
-            eventPublisher.publishEvent(new TransactionRemovedFromBucketEvent(tx, oldBucket));
-        }
+    public Transaction removeBucket(Long transactionId, Long bucketId) {
+        Bucket bucket = bucketService.get(bucketId);
+        Transaction transaction = getById(transactionId);
+        transaction.removeFromBucket();
+        transactionRepository.save(transaction);
+        eventPublisher.publishEvent(new TransactionRemovedFromBucketEvent(transaction, bucket));
+        return transaction;
     }
 
     @EventListener
@@ -94,11 +93,6 @@ public class TransactionService {
         transactionRepository.deleteAllByBucket(bucket);
     }
 
-    // --- Delete ---
-    public void deleteTransaction(Long transactionId) {
-        Transaction tx = getTransactionById(transactionId);
-        transactionRepository.delete(tx);
-    }
 
 
 }

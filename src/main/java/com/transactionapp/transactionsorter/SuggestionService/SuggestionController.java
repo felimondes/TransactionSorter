@@ -17,6 +17,6 @@ public class SuggestionController {
 
     @DeleteMapping("/all")
     public void deleteAllSuggestions() {
-        service.deleteAllSuggestions();
+        service.deleteAll();
     }
 }

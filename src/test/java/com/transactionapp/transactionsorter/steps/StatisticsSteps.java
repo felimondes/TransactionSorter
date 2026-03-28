@@ -10,10 +10,7 @@ import com.transactionapp.transactionsorter.StatisticsService.StatisticsService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
-import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
-import io.cucumber.java.Before;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -39,8 +36,8 @@ public class StatisticsSteps {
 
     @After
     public void cleanup() {
-        transactionService.getAllTransactions().forEach(tx -> transactionService.deleteTransaction(tx.getId()));
-        bucketService.deleteAllBuckets();
+        transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
+        bucketService.deleteAll();
     }
 
 
@@ -88,21 +85,19 @@ public class StatisticsSteps {
 
             String description = merchant + suffix;
 
-            Transaction transaction = transactionService.createTransaction((new TransactionCreationRequest(description, randomDate, amount)));
+            Transaction transaction = transactionService.create((new TransactionCreationRequest(description, randomDate, amount)));
 
 
-            TransactionUpdateRequest request = new TransactionUpdateRequest();
-            request.setBucketId(bucket.getId());
-            transactionService.updateTransaction(transaction.getId(), request);
+            transactionService.assignBucket(transaction.getId(), bucket.getId());
 
         }
     }
 
     @Given("buckets with transactions")
     public void aBucketsWithTransactions() {
-        bucket1 = bucketService.createBucket("GROCERIES");
-        bucket2 = bucketService.createBucket("ENTERTAINMENT");
-        bucket3 = bucketService.createBucket("TRANSPORT");
+        bucket1 = bucketService.create("GROCERIES");
+        bucket2 = bucketService.create("ENTERTAINMENT");
+        bucket3 = bucketService.create("TRANSPORT");
 
         fillBucket(bucket1, "GROCERIES", 42);
         fillBucket(bucket2, "ENTERTAINMENT", 84);
@@ -143,6 +138,6 @@ public class StatisticsSteps {
 
     @Given("there is no buckets")
     public void thereIsNoBuckets() {
-        bucketService.deleteAllBuckets();
+        bucketService.deleteAll();
     }
 }

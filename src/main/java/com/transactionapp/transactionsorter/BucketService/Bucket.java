@@ -45,8 +45,6 @@ public class Bucket {
     public String getName() { return name; }
     public String getTag() { return tag; }
     public List<Transaction> getTransactions() { return transactions; }
-    public List<Suggestion> getTokenStats() { return tokenStats; }
-    public List<HardRule> getHardRules() { return hardRules; }
 
     @Override
     public boolean equals(Object o) {
