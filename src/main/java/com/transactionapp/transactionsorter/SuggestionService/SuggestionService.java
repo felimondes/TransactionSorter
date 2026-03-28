@@ -1,6 +1,7 @@
 package com.transactionapp.transactionsorter.SuggestionService;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
+import com.transactionapp.transactionsorter.TokenBanService.BanTokenService;
 import com.transactionapp.transactionsorter.TransactionService.events.TransactionAddedToBucketEvent;
 import com.transactionapp.transactionsorter.TransactionService.events.TransactionRemovedFromBucketEvent;
 import com.transactionapp.transactionsorter.ErrorHandling.CategorizationException;
@@ -15,9 +16,11 @@ import java.util.*;
 public class SuggestionService {
 
     private final SuggestionRepository repository;
+    private final BanTokenService banTokenService;
 
-    public SuggestionService(SuggestionRepository repository) {
+    public SuggestionService(SuggestionRepository repository, BanTokenService banTokenService) {
         this.repository = repository;
+        this.banTokenService = banTokenService;
     }
 
     public SuggestionScore categorize(String description) {
@@ -27,6 +30,10 @@ public class SuggestionService {
         Map<String, Long> keyToBucketId = new HashMap<>();
 
         for (String token : tokens) {
+
+            if (banTokenService.isBanned(token)) {
+                continue;
+            }
             List<Suggestion> stats = repository.findById_Token(token);
 
             int total = 0;
@@ -82,7 +89,7 @@ public class SuggestionService {
         Bucket bucket = event.getBucket();
         List<String> tokens = extractTokens(event.getTransaction().getDescription());
 
-        //Concurrency problems here:)
+        //Concurrency problems here UPDATE, CREATE UPDATE
         for (String token : tokens) {
             int updated = repository.incrementCount(bucket.getId(), token, 1, java.time.LocalDateTime.now());
             if (updated == 0) {
