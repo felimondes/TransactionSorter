@@ -6,11 +6,14 @@ import java.util.*;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
+import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
 import com.transactionapp.transactionsorter.StatisticsService.StatisticsService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import io.cucumber.java.After;
+import io.cucumber.java.PendingException;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -28,6 +31,8 @@ public class StatisticsSteps {
     Bucket bucket1;
     Bucket bucket2;
     Bucket bucket3;
+
+
     public StatisticsSteps(TransactionService transactionService, BucketService bucketService, StatisticsService statisticsService) {
         this.transactionService = transactionService;
         this.statisticsService = statisticsService;
@@ -39,7 +44,6 @@ public class StatisticsSteps {
         transactionService.getAll().forEach(tx -> transactionService.delete(tx.getId()));
         bucketService.deleteAll();
     }
-
 
     public void fillBucket(Bucket bucket, String category, long seed) {
         Random random = new Random(seed);
@@ -133,11 +137,10 @@ public class StatisticsSteps {
     @Then("i get an error message that says i have to fill buckets with transactions first")
     public void iGetAnErrorMessageThatSaysIHaveToFillBucketsWithTransactionsFirst() {
         assertTrue(e.getMessage().contains("Fill buckets with transactions to see statistics"));
-
     }
 
     @Given("there is no buckets")
     public void thereIsNoBuckets() {
-        bucketService.deleteAll();
+        assertTrue(bucketService.getAll().isEmpty());
     }
 }

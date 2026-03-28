@@ -37,12 +37,6 @@ public class BucketService {
     public Bucket updateData(Long id, BucketUpdateRequest request) {
         Bucket bucket = get(id);
         bucket.updateName(request.getName());
-
-        if (request.isRemoveTag()) {
-            bucket.setTag(null);
-        } else if (request.getTag() !=null) {
-            bucket.setTag(request.getTag());
-        }
         return repository.save(bucket);
     }
 

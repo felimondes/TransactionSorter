@@ -16,7 +16,6 @@ public class Bucket {
     private Long id;
 
     private String name;
-    private String tag;
 
     @OneToMany(mappedBy = "bucket")
     private List<Transaction> transactions = new ArrayList<>();
@@ -43,7 +42,6 @@ public class Bucket {
 
     public Long getId() { return id; }
     public String getName() { return name; }
-    public String getTag() { return tag; }
     public List<Transaction> getTransactions() { return transactions; }
 
     @Override
@@ -56,9 +54,5 @@ public class Bucket {
     @Override
     public int hashCode() {
         return 31;
-    }
-
-    public void setTag(String tag) {
-        this.tag = tag;
     }
 }

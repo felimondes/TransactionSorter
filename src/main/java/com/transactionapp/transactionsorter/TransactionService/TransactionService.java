@@ -66,6 +66,12 @@ public class TransactionService {
         tx.updateDescription(request.getDescription());
         tx.updateAmount(request.getAmount());
         tx.updateDate(request.getDate());
+
+        if (request.isRemoveTag()) {
+            tx.updateTag(null);
+        } else if (request.getTag() !=null) {
+            tx.updateTag(request.getTag());
+        }
         return transactionRepository.save(tx);
     }
 

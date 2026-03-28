@@ -5,8 +5,9 @@ Scenario: Given no buckets with transactions
   When i press statistics
   Then i get an error message that says i have to fill buckets with transactions first
 
-Scenario: Average money spent per month in category
+Scenario: Calculate average money spent per month in for each bucket
   Given buckets with transactions
   When i press statistics
   Then i see the average money spent per month in each bucket sorted from highest to low
+
 

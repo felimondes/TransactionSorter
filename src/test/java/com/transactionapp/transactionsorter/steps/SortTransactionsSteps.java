@@ -6,7 +6,9 @@ import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
+import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -151,29 +153,31 @@ public class SortTransactionsSteps {
         assertEquals(LocalDate.now(), transaction.getCreationDate());
     }
 
-    @When("i add the tag {string} to the bucket")
-    public void iAddTheTagToTheBucket(String tag) {
-        BucketUpdateRequest request = new BucketUpdateRequest();
-        request.setTag(tag);
-        bucketService.updateData(bucketId, request);
+
+    @When("i add the tag {string} to the transaction")
+    public void iAddTheTagToTheTransaction(String arg0) {
+        TransactionUpdateRequest request = new TransactionUpdateRequest();
+        request.setTag(arg0);
+        transactionService.updateData(transactionId, request);
     }
 
-    @Then("the tag {string} is added to the bucket")
-    public void theTagIsAddedToTheBucket(String arg0) {
-        String tag = bucketService.get(bucketId).getTag();
-        assertEquals(arg0, tag);
+    @Then("the tag {string} is added to the transaction")
+    public void theTagIsAddedToTheTransaction(String arg0) {
+        Transaction transaction = transactionService.getById(transactionId);
+        assertEquals(arg0, transaction.getTag());
     }
 
-    @When("i remove the tag {string} from the bucket")
-    public void iRemoveTheTagFromTheBucket(String arg0) {
-        BucketUpdateRequest request = new BucketUpdateRequest();
+    @When("i remove the tag")
+    public void iRemoveTheTag() {
+        TransactionUpdateRequest request = new TransactionUpdateRequest();
         request.markRemoveTag();
-        bucketService.updateData(bucketId, request);
+        transactionService.updateData(transactionId, request);
     }
 
-    @Then("the tag {string} is not in the bucket")
-    public void theTagIsNotInTheBucket(String arg0) {
-        String tag = bucketService.get(bucketId).getTag();
-        assertNull(tag);
+    @Then("it is not longer on the the transaction")
+    public void itIsNotLongerOnTheTheTransaction() {
+        Transaction transaction = transactionService.getById(transactionId);
+        assertNull(transaction.getTag());
+
     }
 }

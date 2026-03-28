@@ -1,21 +1,5 @@
 Feature: As a user i want to sort my transactions in buckets
 
-  Scenario: Date of creation attribute
-    When i create a transaction with description "Netto 123", date "2024-01-01" and amount "100"
-    Then a date of creation attribute is added to it
-
-   Scenario: Add tag to bucket
-    Given a bucket with a name
-    When i add the tag "Shared economy" to the bucket
-    Then the tag "Shared economy" is added to the bucket
-
-  Scenario: Remove tag
-    Given a bucket with a name
-    When i add the tag "Shared economy" to the bucket
-    Then the tag "Shared economy" is added to the bucket
-    When i remove the tag "Shared economy" from the bucket
-    Then the tag "Shared economy" is not in the bucket
-
   Scenario: See unsorted transactions
     Given a transaction
     Then i see the transaction in unsorted transactions
@@ -55,7 +39,21 @@ Feature: As a user i want to sort my transactions in buckets
     When i add the transaction to the bucket
     Then i get an error saying "not found"
 
+  Scenario: See when my transaction is created in the system
+    When i create a transaction with description "Netto 123", date "2024-01-01" and amount "100"
+    Then a date of creation attribute is added to it
 
+  Scenario: Add a tag to a bucket, e.g "Own" or "Shared economy"
+    Given a transaction
+    When i add the tag "Shared economy" to the transaction
+    Then the tag "Shared economy" is added to the transaction
+
+  Scenario: Remove tag
+    Given a transaction
+    When i add the tag "Shared economy" to the transaction
+    Then the tag "Shared economy" is added to the transaction
+    When i remove the tag
+    Then it is not longer on the the transaction
 
 
 

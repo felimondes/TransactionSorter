@@ -24,6 +24,7 @@ public class Transaction {
     private LocalDate date;
     private BigDecimal amount;
     private final LocalDate creationDate = LocalDate.now();
+    private String tag;
 
     protected Transaction() {}
 
@@ -64,6 +65,14 @@ public class Transaction {
     public LocalDate getDate() { return date; }
     public BigDecimal getAmount() { return amount; }
     public LocalDate getCreationDate() { return creationDate; }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void updateTag(String tag) {
+        this.tag = tag;
+    }
 
     @Override
     public boolean equals(Object o) {

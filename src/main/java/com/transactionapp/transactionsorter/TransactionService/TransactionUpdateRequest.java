@@ -8,8 +8,21 @@ public class TransactionUpdateRequest {
     private String description;
     private LocalDate date;
     private BigDecimal amount;
+    private String tag;
+    private boolean removeTag;
 
     // getters + setters
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public void markRemoveTag() { removeTag = true; }
+
+    public boolean isRemoveTag() { return removeTag; }
+
+    public String getTag() {
+        return tag;
+    }
     public String getDescription() {
         return description;
     }
