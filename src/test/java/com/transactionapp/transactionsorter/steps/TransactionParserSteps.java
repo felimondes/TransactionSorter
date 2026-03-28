@@ -40,7 +40,6 @@ public class TransactionParserSteps {
         InputStream is = getClass()
                 .getClassLoader()
                 .getResourceAsStream("transactionsTest.csv");
-
         file = new MockMultipartFile(
                 "file",                        // must match @RequestParam("file")
                 "transactionsTest.csv",        // original filename
