@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.Year;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,21 +28,28 @@ public class StatisticsService {
     public StatisticsService(TransactionRepository transactionRepository) {
         this.transactionRepository = transactionRepository;
     }
+    
 
-    public Map<Long, BigDecimal> getAverageSpentPerMonthByCategory() {
-        List<BucketAverage> averages = transactionRepository.findAveragePerMonthByBucket();
-        Map<Long, BigDecimal> result = averages.stream()
-                .filter(avg -> avg.getBucketId() != null
-                        && avg.getBucketName() != null
-                        && avg.getAveragePerMonth() != null)
-                .collect(Collectors.toMap(
-                        BucketAverage::getBucketId,
-                        avg -> avg.getAveragePerMonth().setScale(2, RoundingMode.HALF_UP)
-                ));
-        if (result.isEmpty()) {
-            throw new StatisticsException("Fill buckets with transactions to see statistics");
+    public MonthlyStatistics viewPerMonthAndYear(int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+
+        List<Object[]> perTagRaw = transactionRepository.getSumPerTag(start, end);
+        BigDecimal total = transactionRepository.getTotalSum(start, end);
+
+        if ((perTagRaw == null || perTagRaw.isEmpty()) && total == null) {
+            throw new StatisticsException("No transactions found for the specified month and year");
         }
-        return result;
-    }
 
+        Map<String, BigDecimal> perTag = new HashMap<>();
+        for (Object[] row : perTagRaw) {
+            String tag = (String) row[0];
+            BigDecimal sum = (BigDecimal) row[1];
+            perTag.put(tag, sum);
+        }
+        return new MonthlyStatistics(
+                total != null ? total : new BigDecimal(String.valueOf(0.0)),
+                perTag
+        );
+    }
 }

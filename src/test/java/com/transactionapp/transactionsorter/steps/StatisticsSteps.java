@@ -2,15 +2,19 @@ package com.transactionapp.transactionsorter.steps;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
+import java.time.Year;
 import java.util.*;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
 import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
+import com.transactionapp.transactionsorter.StatisticsService.MonthlyStatistics;
 import com.transactionapp.transactionsorter.StatisticsService.StatisticsService;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
+import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
@@ -31,6 +35,7 @@ public class StatisticsSteps {
     Bucket bucket1;
     Bucket bucket2;
     Bucket bucket3;
+    private MonthlyStatistics monthlyStatistics;
 
 
     public StatisticsSteps(TransactionService transactionService, BucketService bucketService, StatisticsService statisticsService) {
@@ -68,10 +73,9 @@ public class StatisticsSteps {
         }
 
         int numberOfTransactions = 10 + random.nextInt(10);
-
         for (int i = 0; i < numberOfTransactions; i++) {
             LocalDate start = LocalDate.of(2023, 1, 1);
-            LocalDate end = LocalDate.of(2023, 12, 31);
+            LocalDate end = LocalDate.of(2023, 3, 31);
             long randomDay = start.toEpochDay() +
                     random.nextInt((int) (end.toEpochDay() - start.toEpochDay()));
             LocalDate randomDate = LocalDate.ofEpochDay(randomDay);
@@ -90,57 +94,56 @@ public class StatisticsSteps {
             String description = merchant + suffix;
 
             Transaction transaction = transactionService.create((new TransactionCreationRequest(description, randomDate, amount)));
-
-
+            //add tags
+            List<String> tags = List.of("Shared", "Own");
+            TransactionUpdateRequest request = new TransactionUpdateRequest();
+            request.updateTag(tags.get(random.nextInt(0,2)));
+            transactionService.updateData(transaction.getId(), request);
             transactionService.assignBucket(transaction.getId(), bucket.getId());
 
         }
     }
 
-    @Given("buckets with transactions")
-    public void aBucketsWithTransactions() {
+
+
+
+    @Then("i get an error message that says i have to fill buckets with transactions first")
+    public void iGetAnErrorMessageThatSaysIHaveToFillBucketsWithTransactionsFirst() {
+        assertTrue(e.getMessage().contains("No transactions found"));
+    }
+
+    @Given("sorted transactions in buckets under the tags {string} and {string}")
+    public void sortedTransactionsInBucketsUnderTheTagsAnd(String arg0, String arg1) {
         bucket1 = bucketService.create("GROCERIES");
         bucket2 = bucketService.create("ENTERTAINMENT");
         bucket3 = bucketService.create("TRANSPORT");
 
-        fillBucket(bucket1, "GROCERIES", 42);
-        fillBucket(bucket2, "ENTERTAINMENT", 84);
-        fillBucket(bucket3, "TRANSPORT", 126);
+        fillBucket(bucket1, "GROCERIES", 12);
+        fillBucket(bucket2, "ENTERTAINMENT", 43);
+        fillBucket(bucket3, "TRANSPORT", 111);
     }
 
 
-
-    @When("i press statistics")
-    public void iPressStatistics() {
+    @When("i view statistics for month: {int} and year: {int}")
+    public void iViewStatisticsForMonthAndYear(int arg0, int arg1) {
         try {
-            result = statisticsService.getAverageSpentPerMonthByCategory();
+            monthlyStatistics = statisticsService.viewPerMonthAndYear(3, 2023);
         } catch (Exception e) {
             this.e = e;
         }
     }
 
-    @Then("i see the average money spent per month in each bucket sorted from highest to low")
-    public void iSeeTheAverageMoneySpentPerMonthInEachBucketSortedFromHighestToLow() {
-        BigDecimal avg1 = result.get(bucket1.getId());
-        BigDecimal avg2 = result.get(bucket2.getId());
-        BigDecimal avg3 = result.get(bucket3.getId());
+    @Then("i see sum for each tag {string} and {string}, aswell as the total sum of these tags")
+    public void iSeeSumForEachTagAndAswellAsTheTotalSumOfTheseTags(String arg0, String arg1) {
+        assertTrue(monthlyStatistics.getTotal().compareTo(BigDecimal.ZERO) > 0);
 
-        assertTrue(avg1.compareTo(BigDecimal.ONE) > 0,
-                "Bucket1 average should be > 1, but was " + avg1);
-        assertTrue(avg2.compareTo(BigDecimal.ONE) > 0,
-                "Bucket2 average should be > 1, but was " + avg2);
-        assertTrue(avg3.compareTo(BigDecimal.ONE) > 0,
-                "Bucket3 average should be > 1, but was " + avg3);
+        Map<String, BigDecimal> byTags = monthlyStatistics.getPerTag();
+        assertTrue(byTags.containsKey(arg0));
+        assertTrue(byTags.containsKey(arg1));
     }
 
-
-    @Then("i get an error message that says i have to fill buckets with transactions first")
-    public void iGetAnErrorMessageThatSaysIHaveToFillBucketsWithTransactionsFirst() {
-        assertTrue(e.getMessage().contains("Fill buckets with transactions to see statistics"));
-    }
-
-    @Given("there is no buckets")
-    public void thereIsNoBuckets() {
-        assertTrue(bucketService.getAll().isEmpty());
+    @Given("there is no transactions for month: {int} and year: {int}")
+    public void thereIsNoTransactionsForMonthAndYear(int arg0, int arg1) {
+        //there is none - see @After
     }
 }

@@ -2,13 +2,11 @@ package com.transactionapp.transactionsorter.steps;
 
 import com.transactionapp.transactionsorter.BucketService.Bucket;
 import com.transactionapp.transactionsorter.BucketService.BucketService;
-import com.transactionapp.transactionsorter.BucketService.BucketUpdateRequest;
 import com.transactionapp.transactionsorter.TransactionService.Transaction;
 import com.transactionapp.transactionsorter.TransactionService.TransactionCreationRequest;
 import com.transactionapp.transactionsorter.TransactionService.TransactionService;
 import com.transactionapp.transactionsorter.TransactionService.TransactionUpdateRequest;
 import io.cucumber.java.After;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -157,7 +155,7 @@ public class SortTransactionsSteps {
     @When("i add the tag {string} to the transaction")
     public void iAddTheTagToTheTransaction(String arg0) {
         TransactionUpdateRequest request = new TransactionUpdateRequest();
-        request.setTag(arg0);
+        request.updateTag(arg0);
         transactionService.updateData(transactionId, request);
     }
 

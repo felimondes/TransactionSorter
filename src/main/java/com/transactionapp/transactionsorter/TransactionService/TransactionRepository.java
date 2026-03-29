@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 @Repository
@@ -23,10 +26,24 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     GROUP BY t.bucket.id, t.bucket.name
 """)
     List<BucketAverage> findAveragePerMonthByBucket();
-
     void deleteById(Long id);
-
-    List<Transaction> getTransactionByBucket(Bucket bucket);
-
     void deleteAllByBucket(Bucket bucket);
+
+
+    @Query("""
+    SELECT t.tag, SUM(t.amount)
+    FROM Transaction t
+    WHERE t.date BETWEEN :start AND :end
+    GROUP BY t.tag
+""")
+    List<Object[]> getSumPerTag(LocalDate start, LocalDate end);
+
+    @Query("""
+    SELECT SUM(t.amount)
+    FROM Transaction t
+    WHERE t.date BETWEEN :start AND :end
+""")
+    BigDecimal getTotalSum(LocalDate start, LocalDate end);
+
+
 }

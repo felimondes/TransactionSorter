@@ -12,7 +12,7 @@ public class TransactionUpdateRequest {
     private boolean removeTag;
 
     // getters + setters
-    public void setTag(String tag) {
+    public void updateTag(String tag) {
         this.tag = tag;
     }
 
@@ -27,7 +27,7 @@ public class TransactionUpdateRequest {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void updateDescription(String description) {
         this.description = description;
     }
 
@@ -35,7 +35,7 @@ public class TransactionUpdateRequest {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void updateDate(LocalDate date) {
         this.date = date;
     }
 
